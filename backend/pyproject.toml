@@ -1,0 +1,40 @@
+[project]
+name = "star-backend"
+version = "0.1.0"
+description = "STAR — Secure Surgical Tracking, Assessment & Resources platform (Django REST backend)."
+requires-python = ">=3.14"
+dependencies = [
+    "django>=6.1,<6.2",
+    "djangorestframework>=3.18,<3.19",
+    "djangorestframework-simplejwt>=5.5,<5.6",
+    "drf-spectacular>=0.30,<0.31",
+    "django-filter>=25.1",
+    "psycopg[binary]>=3.2,<4",
+    "python-dotenv>=1.0,<2",
+    "pyotp>=2.9,<3",
+    "gunicorn>=23,<24",
+    "django-cors-headers>=4.7,<5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3,<9",
+    "pytest-django>=4.14,<5",
+    "factory-boy>=3.3,<4",
+    "ruff>=0.12,<1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.testing"
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["apps"]
+addopts = "-q --strict-markers"

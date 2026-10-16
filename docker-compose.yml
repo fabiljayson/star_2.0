@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: star-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-star}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-star_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-star}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - star_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-star} -d $${POSTGRES_DB:-star}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  star_pgdata:

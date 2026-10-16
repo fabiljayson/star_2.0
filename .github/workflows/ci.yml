@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (ruff + pytest)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: star
+          POSTGRES_PASSWORD: star_ci_password
+          POSTGRES_DB: star_ci
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U star -d star_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5433"
+      POSTGRES_DB: star_ci
+      POSTGRES_USER: star
+      POSTGRES_PASSWORD: star_ci_password
+      DJANGO_SECRET_KEY: ci-only-not-a-real-secret
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check .
+      - name: Check migrations are up to date
+        run: uv run python manage.py makemigrations --check --dry-run
+      - name: Tests
+        run: uv run pytest
