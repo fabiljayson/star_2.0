@@ -5,18 +5,18 @@ description: "Framework-agnostic design rules for web and mobile app implementat
 # ─── Colors ───────────────────────────────────────────────
 colors:
   # Brand
-  primary:       "#a16207"
-  primaryStrong: "#451a03"
-  primarySoft:   "#fde68a"
-  accent:        "#a16207"
+  primary:       "#00adb5"
+  primaryStrong: "#222831"
+  primarySoft:   "#b8eef0"
+  accent:        "#00adb5"
 
   # Surfaces
-  surface:       "#fef3c7"
-  surfaceMuted:  "#fde68a"
+  surface:       "#eeeeee"
+  surfaceMuted:  "#b8eef0"
 
   # Text & Border
-  text:          "#1c0d02"
-  border:        "#78350f"
+  text:          "#1d232c"
+  border:        "#303640"
 
   # Feedback
   success:       "#16A34A"
@@ -25,12 +25,12 @@ colors:
 
 # ─── Typography ───────────────────────────────────────────
 typography:
-  family:        "Geist, system-ui, sans-serif"
-  displayFamily: "Geist, system-ui, sans-serif"
+  family:        "Atkinson Hyperlegible, system-ui, sans-serif"
+  displayFamily: "Atkinson Hyperlegible, system-ui, sans-serif"
   monoFamily:    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-  source:        "Optional Google Font: https://fonts.google.com/specimen/Geist"
-  weights:       "400, 500, 600, 700"
-  defaultWeight: 600
+  source:        "Optional Google Font: https://fonts.google.com/specimen/Atkinson+Hyperlegible"
+  weights:       "400, 700"
+  defaultWeight: 700
   tone:          "sans"
 
 # Spacing
@@ -95,11 +95,11 @@ This file is a portable design skill. Any AI or engineer should be able to read 
 7. Verify desktop and mobile before finishing.
 
 ## Visual Direction
-- Color direction: Warm - Soft amber depth.
-- Typography direction: Geist UI - Modern SaaS screens.
+- Color direction: Noir Teal - Dark dev contrast.
+- Typography direction: Accessible UI - High-legibility flows.
 - Style direction: Liquid Glass - Floating translucent material with lens-like refraction, soft glow, and adaptive chrome
 - References: Apple Liquid Glass, visionOS controls, iOS widget glass, immersive travel hero overlays, smart home floating panels, dark glossy liquid hero surfaces, layered glass filter/overlay/specular construction.
-- Visual style: Warm color direction, Geist UI typography, Liquid Glass style.
+- Visual style: Noir Teal color direction, Accessible UI typography, Liquid Glass style.
 
 ## Style System: Liquid Glass
 Use Liquid Glass to make the interface feel like translucent adaptive material suspended over an immersive background. The style is defined by lens refraction, frosted depth, pill geometry, soft edge highlights, subtle glow, floating controls, and glass widgets that bend light without hiding the content. It works best for premium product pages, travel and media experiences, smart-home dashboards, command surfaces, app chrome, and interfaces where the background can carry atmosphere. It must feel tactile and alive, but never become an empty glass demo.
@@ -188,13 +188,13 @@ Use Liquid Glass to make the interface feel like translucent adaptive material s
 Use semantic tokens first. Raw values from frontmatter are source values, not permission to scatter hex codes or one-off sizes through implementation.
 
 ### Color
-- Primary action color: #a16207.
-- Strong primary: #451a03. Use for high-emphasis text, selected state, or strong borders.
-- Soft primary: #fde68a. Use for subtle surfaces, selected backgrounds, or calm highlights.
-- Surface: #fef3c7.
-- Muted surface: #fde68a.
-- Text: #1c0d02.
-- Border: #78350f.
+- Primary action color: #00adb5.
+- Strong primary: #222831. Use for high-emphasis text, selected state, or strong borders.
+- Soft primary: #b8eef0. Use for subtle surfaces, selected backgrounds, or calm highlights.
+- Surface: #eeeeee.
+- Muted surface: #b8eef0.
+- Text: #1d232c.
+- Border: #303640.
 - Success, warning, and danger are semantic states. Pair them with labels, icons, or position; never rely on color alone.
 - When moving from a dark theme to a light or warm theme, update inherited light text classes such as white, muted-white, or low-opacity foregrounds.
 - Do not apply one warm/cream/brown palette across the entire page without contrast, hierarchy, and content anchors.
@@ -204,9 +204,9 @@ Use semantic tokens first. Raw values from frontmatter are source values, not pe
 ```css
 /* Liquid Glass selection: soft lens glow. */
 ::selection {
-  background-color: #fde68a;
-  color: #1c0d02;
-  text-shadow: 0 0 12px #a16207;
+  background-color: #b8eef0;
+  color: #1d232c;
+  text-shadow: 0 0 12px #00adb5;
 }
 ```
 - If the selected color changes, keep the same style behavior but re-check text/background contrast.
@@ -219,11 +219,11 @@ Use semantic tokens first. Raw values from frontmatter are source values, not pe
 - Do not finish with invisible text, hidden CTAs, empty hero areas, or decorative backgrounds replacing product content.
 
 ### Typography
-- Primary family: Geist, system-ui, sans-serif.
-- Display family: Geist, system-ui, sans-serif.
+- Primary family: Atkinson Hyperlegible, system-ui, sans-serif.
+- Display family: Atkinson Hyperlegible, system-ui, sans-serif.
 - Monospace family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace.
-- Allowed weights: 400, 500, 600, 700.
-- Default UI weight: 600.
+- Allowed weights: 400, 700.
+- Default UI weight: 700.
 - Keep heading levels semantic. Visual size must follow layout importance, not HTML heading number.
 - Keep letter spacing at 0 by default. Use uppercase labels sparingly and only for short metadata.
 

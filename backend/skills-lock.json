@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "django-expert": {
+      "source": "vintasoftware/django-ai-plugins",
+      "sourceType": "autoskills-registry",
+      "computedHash": "d79c904469336db703b1df99a3b9ccee9f8e8a9a09920773759f9070e326f4ad"
+    },
+    "django-patterns": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "autoskills-registry",
+      "computedHash": "faf117ec92d0f3a40f125f06cd87eec5a21870e11214933a2baba20b4a8cad4c"
+    },
+    "django-security": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "autoskills-registry",
+      "computedHash": "559805aed6745256817d4478f858be9c6d896727fa33eae5521b0c10f47501c2"
+    },
+    "python-executor": {
+      "source": "inferen-sh/skills",
+      "sourceType": "autoskills-registry",
+      "computedHash": "2e6c3a689e19bee7533b10d3b9954e38873e6dc3d0db73ff4e693e627f8c92cb"
+    },
+    "python-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "autoskills-registry",
+      "computedHash": "c8f806cc10a5b3daeb0f5fd31bfaa751019e23e78e2708b7f4de470d6b7ad4e9"
+    }
+  }
+}
