@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
 
-from . import services
+from . import services, transcription
 from .models import (
     Attachment,
     PatientReference,
@@ -435,3 +435,91 @@ class AttachmentDownloadView(views.APIView):
         response["X-Content-Type-Options"] = "nosniff"
         response["Cache-Control"] = "private, no-store"
         return response
+
+
+# ── Voice dictation (transcription adapter) ────────────────────────────
+class ProcedureTranscribeView(views.APIView):
+    """Send dictation audio to the configured provider and return a draft
+    transcript for manual review.
+
+    The transcript is never written to the record automatically: the author
+    must edit and save or submit explicitly. Raw audio stays in memory for
+    the duration of the call and is not persisted by the mock provider.
+    """
+
+    def post(self, request, pk):
+        procedure = _get_visible_procedure(request, pk)
+        if procedure.author_id != request.user.pk:
+            raise exceptions.PermissionDenied(
+                "Only the record author can dictate into this record.",
+                code="permission_denied",
+            )
+        if not procedure.is_editable:
+            raise exceptions.ValidationError(
+                {"status": f"Records in status '{procedure.status}' are locked for dictation."}
+            )
+
+        language = str(request.data.get("language") or "en").strip().lower()
+        if language not in transcription.supported_languages():
+            raise exceptions.ValidationError(
+                {
+                    "language": (
+                        "Unsupported transcription language "
+                        f"(available: {', '.join(transcription.supported_languages())})."
+                    )
+                }
+            )
+
+        audio = request.data.get("audio")
+        if audio is None:
+            raise exceptions.ValidationError({"audio": "This field is required."})
+        meta = transcription.validate_and_read_audio(audio)
+
+        provider = transcription.get_provider()
+        try:
+            result = provider.transcribe(
+                meta["data"],
+                language=language,
+                filename=getattr(audio, "name", "") or "",
+            )
+        except transcription.TranscriptionUnavailable as exc:
+            record_audit(
+                request=request,
+                action=AuditEvent.Action.TRANSCRIPTION_FAILED,
+                object_type="surgical_procedure",
+                object_pk=procedure.pk,
+                institution=procedure.institution,
+                metadata={
+                    "reference": procedure.reference,
+                    "language": language,
+                    "provider": provider.name,
+                    "size_bytes": meta["size_bytes"],
+                },
+            )
+            raise exc
+
+        record_audit(
+            request=request,
+            action=AuditEvent.Action.TRANSCRIPTION_COMPLETED,
+            object_type="surgical_procedure",
+            object_pk=procedure.pk,
+            institution=procedure.institution,
+            metadata={
+                "reference": procedure.reference,
+                "language": language,
+                "provider": result.provider,
+                "simulated": result.simulated,
+                "size_bytes": meta["size_bytes"],
+                "sha256": meta["sha256"],
+            },
+        )
+        return Response(
+            {
+                "text": result.text,
+                "language": result.language,
+                "provider": result.provider,
+                "simulated": result.simulated,
+                "confidence": result.confidence,
+                "uncertain": result.uncertain,
+            }
+        )

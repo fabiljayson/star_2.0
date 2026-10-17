@@ -6,11 +6,13 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import exceptions
 
-from apps.accounts.models import INSTITUTION_SCOPED_ROLES, RoleAssignment, UserRole
+from apps.accounts.models import INSTITUTION_SCOPED_ROLES, RoleAssignment, User, UserRole
 from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
 from apps.logbook.models import ParticipantRole, ProcedureStatus, SurgicalProcedure
 from apps.logbook.services import has_institution_role, is_marketplace_only
+from apps.notifications import services as notification_services
+from apps.notifications.models import NotificationCategory
 
 from .models import (
     Assessment,
@@ -174,6 +176,17 @@ def create_placement(
             "start_date": str(placement.start_date),
         },
     )
+    notification_services.notify(
+        recipients=User.objects.filter(pk=placement.trainee_id, is_active=True),
+        category=NotificationCategory.PLACEMENT_UPDATE,
+        title="Training placement assigned",
+        body=f"You were assigned to the placement '{placement.title}'.",
+        link=f"/training/placements/{placement.pk}",
+        actor=user,
+        institution=placement.institution,
+        object_type="training_placement",
+        object_pk=placement.pk,
+    )
     return placement
 
 
@@ -277,6 +290,17 @@ def complete_placement(
         institution=placement.institution,
         metadata={"title": placement.title},
     )
+    notification_services.notify(
+        recipients=User.objects.filter(pk=placement.trainee_id, is_active=True),
+        category=NotificationCategory.PLACEMENT_UPDATE,
+        title=f"Placement '{placement.title}' completed",
+        body="Your training placement was marked as completed.",
+        link=f"/training/placements/{placement.pk}",
+        actor=actor,
+        institution=placement.institution,
+        object_type="training_placement",
+        object_pk=placement.pk,
+    )
     return placement
 
 
@@ -307,6 +331,17 @@ def cancel_placement(
         object_pk=placement.pk,
         institution=placement.institution,
         metadata={"title": placement.title, "reason_provided": bool(reason.strip())},
+    )
+    notification_services.notify(
+        recipients=User.objects.filter(pk=placement.trainee_id, is_active=True),
+        category=NotificationCategory.PLACEMENT_UPDATE,
+        title=f"Placement '{placement.title}' cancelled",
+        body="Your training placement was cancelled.",
+        link=f"/training/placements/{placement.pk}",
+        actor=actor,
+        institution=placement.institution,
+        object_type="training_placement",
+        object_pk=placement.pk,
     )
     return placement
 
@@ -348,6 +383,17 @@ def assign_examiner(
         object_pk=assignment.pk,
         institution=placement.institution,
         metadata={"examiner": examiner.email, "title": placement.title},
+    )
+    notification_services.notify(
+        recipients=[examiner],
+        category=NotificationCategory.EXAMINER_ASSIGNED,
+        title="You were assigned as an examiner",
+        body=f"You can now assess trainees in the placement '{placement.title}'.",
+        link=f"/training/placements/{placement.pk}",
+        actor=actor,
+        institution=placement.institution,
+        object_type="examiner_assignment",
+        object_pk=assignment.pk,
     )
     return assignment
 
@@ -459,6 +505,20 @@ def current_rubric_for(competency: Competency) -> CompetencyRubricVersion | None
 
 
 # ── Assessments ────────────────────────────────────────────────────────
+def _assessment_deciders(placement: TrainingPlacement):
+    """Supervisors/managers of the institution plus assigned examiners."""
+    manager_ids = RoleAssignment.objects.filter(
+        institution_id=placement.institution_id,
+        role__in=ASSESSMENT_DECIDER_ROLES,
+        is_active=True,
+    ).values_list("user_id", flat=True)
+    assigned_ids = placement.examiner_assignments.values_list("examiner_id", flat=True)
+    return User.objects.filter(
+        (Q(pk__in=manager_ids) | Q(pk__in=assigned_ids)),
+        is_active=True,
+    )
+
+
 def visible_assessments(user):
     if not user or not user.is_authenticated or not user.is_active:
         return Assessment.objects.none()
@@ -607,6 +667,20 @@ def submit_assessment(
         institution=assessment.placement.institution,
         metadata={"code": assessment.competency.code},
     )
+    notification_services.notify(
+        recipients=_assessment_deciders(assessment.placement).exclude(pk=actor.pk),
+        category=NotificationCategory.ASSESSMENT_SUBMITTED,
+        title="Assessment awaiting your decision",
+        body=(
+            f"A competency assessment ({assessment.competency.code}) was "
+            "submitted and awaits a decision."
+        ),
+        link=f"/assessments/{assessment.pk}",
+        actor=actor,
+        institution=assessment.placement.institution,
+        object_type="competency_assessment",
+        object_pk=assessment.pk,
+    )
     return assessment
 
 
@@ -667,6 +741,39 @@ def decide_assessment(
         institution=assessment.placement.institution,
         metadata={"decision": target, "code": assessment.competency.code},
     )
+    if target == AssessmentStatus.NEEDS_CORRECTION:
+        notification_services.notify(
+            recipients=User.objects.filter(pk=assessment.assessor_id, is_active=True),
+            category=NotificationCategory.ASSESSMENT_CORRECTION,
+            title="Corrections requested on your assessment",
+            body=(
+                f"Corrections were requested on your assessment "
+                f"({assessment.competency.code}). Open it to revise and resubmit."
+            ),
+            link=f"/assessments/{assessment.pk}",
+            actor=actor,
+            institution=assessment.placement.institution,
+            object_type="competency_assessment",
+            object_pk=assessment.pk,
+        )
+    else:
+        outcome = "approved" if target == AssessmentStatus.APPROVED else "rejected"
+        notification_services.notify(
+            recipients=User.objects.filter(
+                pk=assessment.placement.trainee_id, is_active=True
+            ),
+            category=NotificationCategory.ASSESSMENT_RESULT,
+            title=f"Assessment {outcome}",
+            body=(
+                f"Your competency assessment ({assessment.competency.code}) "
+                f"was {outcome}. Open it for details."
+            ),
+            link=f"/assessments/{assessment.pk}",
+            actor=actor,
+            institution=assessment.placement.institution,
+            object_type="competency_assessment",
+            object_pk=assessment.pk,
+        )
     return assessment
 
 

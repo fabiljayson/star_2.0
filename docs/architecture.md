@@ -194,9 +194,10 @@ Rules enforced in `apps/logbook/services.py`:
   stay intact; hard deletion is reserved for data without retention value.
 - **No secrets in code:** everything comes from the environment; `.env` is
   git-ignored.
-- **Mock boundaries:** external integrations (payments, transcription) will
-  be abstracted with clearly labelled sandbox/mock providers; simulated
-  results are never presented as real ones (M3/M5).
+- **Mock boundaries:** external integrations (payments, transcription) are
+  abstracted with clearly labelled sandbox/mock providers; simulated
+  results are never presented as real ones (M3 transcription shipped as a
+  mock, payments planned for M5).
 
 ## 7. Milestone status
 
@@ -215,5 +216,12 @@ Rules enforced in `apps/logbook/services.py`:
   competency catalog, immutable rubric versions, assessment workflow
   (no self-approval, mandatory reasons), placement progress endpoint
   (logbook counts + competency state), demo seed, 64 new tests (170 total).
-- **M3b (planned):** transcription mock adapter + in-app notifications.
+- **M3b (done):** transcription adapter behind a provider interface
+  (`MockTranscriptionProvider`, deterministic output in `en`/`fr`, results
+  labelled `simulated`, audio validated and discarded, outage toggle
+  `TRANSCRIPTION_MOCK_FAILURE` → 503) plus an in-app notification centre
+  (`apps.notifications`): 8 categories, preferences per user/category, recipient
+  isolation, generic previews that never contain clinical text; triggers wired
+  into submission/review, placements, examiner assignments and assessment
+  submit/decide. 33 new tests (203 total).
 - **M4–M7:** per README milestones.

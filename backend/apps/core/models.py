@@ -84,6 +84,11 @@ class AuditEvent(UUIDModel, TimeStampedModel):
         ASSESSMENT_UPDATED = "assessment.updated", "Competency assessment updated"
         ASSESSMENT_SUBMITTED = "assessment.submitted", "Competency assessment submitted"
         ASSESSMENT_DECIDED = "assessment.decided", "Competency assessment decided"
+        TRANSCRIPTION_COMPLETED = (
+            "transcription.completed",
+            "Transcription completed (simulated or real)",
+        )
+        TRANSCRIPTION_FAILED = "transcription.failed", "Transcription failed"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,

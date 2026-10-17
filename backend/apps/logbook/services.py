@@ -6,9 +6,11 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework import exceptions
 
-from apps.accounts.models import RoleAssignment, UserRole
+from apps.accounts.models import RoleAssignment, User, UserRole
 from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
+from apps.notifications import services as notification_services
+from apps.notifications.models import NotificationCategory
 
 from .models import (
     NOTE_SNAPSHOT_FIELDS,
@@ -49,6 +51,17 @@ REVIEWER_ROLES = frozenset(
 
 # Marketplace roles must never touch clinical data at all.
 MARKETPLACE_ONLY_ROLES = frozenset({UserRole.SUPPLIER, UserRole.BUYER})
+
+
+def _institution_reviewers(procedure: SurgicalProcedure):
+    reviewer_ids = RoleAssignment.objects.filter(
+        institution_id=procedure.institution_id,
+        role__in=REVIEWER_ROLES,
+        is_active=True,
+    ).values_list("user_id", flat=True)
+    return User.objects.filter(pk__in=reviewer_ids, is_active=True).exclude(
+        pk=procedure.author_id
+    )
 
 
 # ── Role helpers ───────────────────────────────────────────────────────
@@ -274,6 +287,20 @@ def submit_procedure(procedure: SurgicalProcedure, *, actor, request=None) -> No
         institution=procedure.institution,
         metadata={"reference": procedure.reference, "version": procedure.version},
     )
+    notification_services.notify(
+        recipients=_institution_reviewers(procedure),
+        category=NotificationCategory.PROCEDURE_SUBMITTED,
+        title=f"Record {procedure.reference} awaits review",
+        body=(
+            "A surgical record in your institution was submitted and is "
+            "waiting for a review decision."
+        ),
+        link=f"/procedures/{procedure.pk}",
+        actor=actor,
+        institution=procedure.institution,
+        object_type="surgical_procedure",
+        object_pk=procedure.pk,
+    )
 
 
 @transaction.atomic
@@ -362,6 +389,30 @@ def review_procedure(
             "version": procedure.version,
         },
     )
+    if target == ProcedureStatus.APPROVED:
+        notification_services.notify(
+            recipients=User.objects.filter(pk=procedure.author_id, is_active=True),
+            category=NotificationCategory.PROCEDURE_APPROVED,
+            title=f"Record {procedure.reference} approved",
+            body="A review decision approved one of your surgical records.",
+            link=f"/procedures/{procedure.pk}",
+            actor=actor,
+            institution=procedure.institution,
+            object_type="surgical_procedure",
+            object_pk=procedure.pk,
+        )
+    elif target == ProcedureStatus.RETURNED:
+        notification_services.notify(
+            recipients=User.objects.filter(pk=procedure.author_id, is_active=True),
+            category=NotificationCategory.PROCEDURE_RETURNED,
+            title=f"Record {procedure.reference} returned for correction",
+            body="A reviewer requested corrections on one of your surgical records.",
+            link=f"/procedures/{procedure.pk}",
+            actor=actor,
+            institution=procedure.institution,
+            object_type="surgical_procedure",
+            object_pk=procedure.pk,
+        )
     return review_decision
 
 

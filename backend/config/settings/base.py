@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.organizations",
     "apps.logbook",
     "apps.training",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -209,6 +210,20 @@ AUDIO_RETENTION_DAYS = env_int("AUDIO_RETENTION_DAYS", 7)
 PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "sandbox")
 PAYMENT_WEBHOOK_SECRET = os.environ.get("PAYMENT_WEBHOOK_SECRET", "")
 TRANSCRIPTION_PROVIDER = os.environ.get("TRANSCRIPTION_PROVIDER", "mock")
+TRANSCRIPTION_MOCK_FAILURE = env_bool("TRANSCRIPTION_MOCK_FAILURE", False)
+TRANSCRIPTION_LANGUAGES = [
+    lang.strip().lower()
+    for lang in os.environ.get("TRANSCRIPTION_LANGUAGES", "en,fr").split(",")
+    if lang.strip()
+]
+AUDIO_MAX_SIZE_MB = env_int("AUDIO_MAX_SIZE_MB", 10)
+AUDIO_ALLOWED_EXTENSIONS = [
+    ext.strip().lower()
+    for ext in os.environ.get(
+        "AUDIO_ALLOWED_EXTENSIONS", ".wav,.ogg,.webm,.mp3,.m4a"
+    ).split(",")
+    if ext.strip()
+]
 
 
 # ── API documentation ──────────────────────────────────────────────────

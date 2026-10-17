@@ -10,10 +10,10 @@ STAR is a documentation, education and commerce platform. It does **not**
 diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
-> **Status:** Milestones 1–2 (foundations + surgical logbook) implemented and
-> tested; Milestone 3 partially delivered (training placements, competency
-> catalog, assessments — voice transcription and notifications still
-> planned). See [Milestones](#milestones).
+> **Status:** Milestones 1–3 delivered: foundations, surgical logbook,
+> education (training placements, competency catalog, assessments), voice
+> transcription (deterministic mock) and in-app notifications.
+> See [Milestones](#milestones).
 
 ---
 
@@ -161,6 +161,8 @@ Endpoint groups implemented in Milestone 1:
 | Competencies | `GET|POST /api/v1/competencies/`, `GET|PATCH .../{id}/` |
 | Rubric versions | `GET|POST .../{id}/rubric-versions/`, `GET .../{id}/rubric-versions/{vid}/` |
 | Assessments | `GET|POST /api/v1/assessments/`, `GET|PATCH .../{id}/`, `POST .../{id}/submit/`, `POST .../{id}/decide/` |
+| Transcription | `POST /api/v1/procedures/{id}/transcribe/` (author only, deterministic mock, audio never stored) |
+| Notifications | `GET /api/v1/notifications/`, `GET .../unread-count/`, `POST .../read/`, `POST .../read-all/`, `GET|PUT|PATCH .../preferences/` |
 | Ops | `GET /api/v1/health/`, `/schema/`, `/docs/` |
 
 ---
@@ -219,7 +221,7 @@ star/
 |---|-------|--------|
 | 1 | Foundations: structure, database, auth, roles, institutions, audit, CI | **done** |
 | 2 | Surgical logbook: records, participants, lifecycle, attachments | **done** |
-| 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **in progress** (training + assessments done) |
+| 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **done** (203 tests) |
 | 4 | Reports and exports (PDF/CSV) | planned |
 | 5 | Marketplace: suppliers, inventory, orders, sandbox payments | planned |
 | 6 | Complete web (and mobile) interfaces | planned |

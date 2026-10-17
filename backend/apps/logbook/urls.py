@@ -64,4 +64,9 @@ urlpatterns = [
         views.AttachmentDownloadView.as_view(),
         name="procedure-attachment-download",
     ),
+    path(
+        "procedures/<uuid:pk>/transcribe/",
+        views.ProcedureTranscribeView.as_view(),
+        name="procedure-transcribe",
+    ),
 ]
