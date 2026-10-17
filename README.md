@@ -11,8 +11,9 @@ diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
 > **Status:** Milestones 1–2 (foundations + surgical logbook) implemented and
-> tested. Milestones 3–7 (voice, training, reporting, marketplace, web UI,
-> hardening) are planned — see [Milestones](#milestones).
+> tested; Milestone 3 partially delivered (training placements, competency
+> catalog, assessments — voice transcription and notifications still
+> planned). See [Milestones](#milestones).
 
 ---
 
@@ -50,6 +51,8 @@ medical record system.
 - `apps.organizations` — institutions, departments, specialties, memberships.
 - `apps.logbook` — pseudonymous patient references, surgical records,
   participants, review lifecycle, note versioning, private attachments.
+- `apps.training` — training placements, examiner assignments, competency
+  catalog with immutable rubric versions, competency assessments, progress.
 
 ---
 
@@ -107,7 +110,7 @@ platform-administrator rights (`is_platform_admin`, staff access to
 
 ```bash
 cd backend
-uv run pytest          # 106 tests (Milestones 1 + 2)
+uv run pytest          # 170 tests (Milestones 1–2 + training/M3)
 uv run ruff check .    # lint
 uv run python manage.py makemigrations --check --dry-run   # migrations up to date?
 ```
@@ -153,6 +156,11 @@ Endpoint groups implemented in Milestone 1:
 | Record actions | `POST .../{id}/submit/`, `GET|POST .../{id}/reviews/`, `POST .../{id}/archive/`, `GET .../{id}/versions/` |
 | Participants | `GET|POST .../{id}/participants/`, `DELETE .../{id}/participants/{pid}/` |
 | Attachments | `GET|POST .../{id}/attachments/`, `DELETE .../{id}/attachments/{aid}/`, `GET .../{id}/attachments/{aid}/download/` |
+| Placements | `GET|POST /api/v1/training/placements/`, `GET|PATCH .../{id}/`, `POST .../{id}/complete/`, `.../cancel/`, `GET .../{id}/progress/` |
+| Examiner assignments | `GET|POST .../{id}/examiners/`, `DELETE .../{id}/examiners/{aid}/` |
+| Competencies | `GET|POST /api/v1/competencies/`, `GET|PATCH .../{id}/` |
+| Rubric versions | `GET|POST .../{id}/rubric-versions/`, `GET .../{id}/rubric-versions/{vid}/` |
+| Assessments | `GET|POST /api/v1/assessments/`, `GET|PATCH .../{id}/`, `POST .../{id}/submit/`, `POST .../{id}/decide/` |
 | Ops | `GET /api/v1/health/`, `/schema/`, `/docs/` |
 
 ---
@@ -171,8 +179,9 @@ Endpoint groups implemented in Milestone 1:
 
 `uv run python manage.py seed_demo` creates **synthetic** institutions
 (prefixed "Demo"), fictional accounts (all `@demo.test` addresses), a global
-specialty catalog and three fictional surgical records (draft / submitted /
-approved) with pseudonymous `PR-…` patient references. No real people,
+specialty catalog, three fictional surgical records (draft / submitted /
+approved) with pseudonymous `PR-…` patient references, plus a synthetic
+training placement, competency catalog and assessments. No real people,
 institutions or patient data are ever included.
 
 - Shared demo password (development only): `Demo!Passw0rd2026`
@@ -193,6 +202,7 @@ star/
 │   ├── apps/accounts/       # users, roles, JWT, MFA, recovery, invitations
 │   ├── apps/organizations/  # institutions, departments, specialties
 │   ├── apps/logbook/        # surgical records, lifecycle, attachments
+│   ├── apps/training/       # placements, competencies, assessments
 │   └── conftest.py          # shared pytest fixtures
 ├── web/                     # React + Vite app (Milestone 6)
 ├── docs/                    # architecture, requirements, security, ...
@@ -209,7 +219,7 @@ star/
 |---|-------|--------|
 | 1 | Foundations: structure, database, auth, roles, institutions, audit, CI | **done** |
 | 2 | Surgical logbook: records, participants, lifecycle, attachments | **done** |
-| 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | planned |
+| 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **in progress** (training + assessments done) |
 | 4 | Reports and exports (PDF/CSV) | planned |
 | 5 | Marketplace: suppliers, inventory, orders, sandbox payments | planned |
 | 6 | Complete web (and mobile) interfaces | planned |
@@ -233,6 +243,14 @@ See `docs/architecture.md` for design decisions and security notes.
   marketplace (supplier/buyer) accounts have **no** clinical access by default.
 - Surgical records cannot be edited while submitted/under review/archived;
   post-approval edits create an immutable note version and force re-review.
+- Training data is institution-scoped like clinical data: trainees see their
+  own placements, supervisors/managers their institution's, examiners only
+  placements they are explicitly assigned to. A trainee can hold at most one
+  active placement.
+- Competency rubric versions are immutable snapshots; assessments pin the
+  version they were scored against, so rubric changes never rewrite history.
+  Assessments are always decided by someone other than their assessor (no
+  self-approval), with a mandatory reason for corrections and rejections.
 - Attachments are stored outside the web root in private storage; downloads
   require a JWT and permission check, with `Cache-Control: private, no-store`.
   Uploads are validated by size, extension allowlist **and** magic-byte

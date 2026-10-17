@@ -25,6 +25,8 @@ STAR. It is updated at every milestone.
                     │  │                 departments, invites │  │
                     │  │ apps.logbook     surgical records,   │  │
                     │  │                 lifecycle, files     │  │
+                    │  │ apps.training    placements,         │  │
+                    │  │                 competencies, scores │  │
                     │  └─────────────────────────────────────┘  │
                     └───────────────┬───────────────────────────┘
                                     │
@@ -97,6 +99,36 @@ Data dictionary and ER diagram: `docs/data-dictionary.md` (Milestone 7).
 - **`Attachment`** — private-storage file with original name, *detected*
   content kind, size, SHA-256, uploader. Binaries never live in relational
   tables.
+
+#### Education model (Milestone 3a — `apps.training`)
+
+- **`TrainingPlacement`** — trainee ↔ institution/department/period with
+  supervisor, objectives and expected competencies; statuses
+  `active → completed|cancelled`; **one active placement per trainee**
+  (partial unique constraint at the database level).
+- **`ExaminerAssignment`** — explicit examiner authorization per placement
+  (unique per pair); the examiner role alone grants no assessment rights.
+- **`Competency`** — institution-scoped catalog (unique `code` per
+  institution).
+- **`CompetencyRubricVersion`** — immutable JSON rubric snapshot
+  (`scale` + `criteria`), auto-numbered; only the latest is `is_current`.
+- **`Assessment`** — assessor + placement + competency + pinned rubric
+  version, criterion scores, overall level, feedback; statuses
+  `draft → submitted → approved | needs_correction | rejected`
+  (`needs_correction` loops back to the assessor).
+
+Education rules enforced in `apps/training/services.py`:
+
+- Placements are managed by institution supervisors, department managers
+  and institution administrators; trainees may only read their own.
+- Assessments are created by the placement supervisor, assigned examiners
+  or managers — and decided by **someone else** (self-approval impossible);
+  corrections/rejections require a reason.
+- Scores are validated against the pinned rubric (unknown criteria or
+  levels are rejected), and procedure counts stay separate from
+  qualitative ratings (a count never marks a competency as achieved).
+- Out-of-scope education records return `404`, consistent with the
+  clinical API.
 
 #### Record lifecycle
 
@@ -178,4 +210,10 @@ Rules enforced in `apps/logbook/services.py`:
   attachment storage with content sniffing and permission-checked download,
   institution-scoped visibility (404 out of scope), demo seed, 52 new tests
   (106 total).
-- **M3–M7:** per README milestones.
+- **M3a (done):** `apps.training` — placements with lifecycle + one-active-
+  per-trainee constraint, explicit examiner assignments, institution
+  competency catalog, immutable rubric versions, assessment workflow
+  (no self-approval, mandatory reasons), placement progress endpoint
+  (logbook counts + competency state), demo seed, 64 new tests (170 total).
+- **M3b (planned):** transcription mock adapter + in-app notifications.
+- **M4–M7:** per README milestones.

@@ -144,11 +144,102 @@ class Command(BaseCommand):
             RoleAssignment.objects.get_or_create(user=user, role=role, institution=None)
 
         self._seed_logbook()
+        self._seed_training()
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demonstration data ready. Shared demo password: {DEMO_PASSWORD}"
             )
+        )
+
+    def _seed_training(self):
+        """Synthetic placements, competencies and assessments (fictional)."""
+        from apps.training import services as training_services
+        from apps.training.models import (
+            Competency,
+            ExaminerAssignment,
+            TrainingPlacement,
+        )
+
+        User = get_user_model()
+        if TrainingPlacement.objects.exists():
+            return
+
+        institution = Institution.objects.filter(
+            name="Demo General Hospital — North"
+        ).first()
+        if institution is None:
+            return
+        trainee = User.objects.get(email="trainee.demo@example.test")
+        supervisor = User.objects.get(email="supervisor.demo@example.test")
+        examiner = User.objects.get(email="examiner.demo@example.test")
+        manager = User.objects.get(email="manager.demo@example.test")
+        department = Department.objects.filter(institution=institution).first()
+
+        placement = TrainingPlacement.objects.create(
+            institution=institution,
+            department=department,
+            trainee=trainee,
+            supervisor=supervisor,
+            start_date=date(2026, 9, 1),
+            end_date=date(2027, 2, 28),
+            title="Synthetic demo — general surgery rotation",
+            objectives="Synthetic training objectives for demonstration only.",
+            created_by=supervisor,
+        )
+
+        competencies = [
+            Competency.objects.create(
+                institution=institution,
+                code="DEMO-CHOLE",
+                title="Synthetic demo — cholecystectomy fundamentals",
+                description="Fictional competency used by the seed.",
+            ),
+            Competency.objects.create(
+                institution=institution,
+                code="DEMO-HERNIA",
+                title="Synthetic demo — hernia repair fundamentals",
+                description="Fictional competency used by the seed.",
+            ),
+        ]
+        for competency in competencies:
+            training_services.create_rubric_version(competency, actor=manager)
+        placement.expected_competencies.set(competencies)
+
+        ExaminerAssignment.objects.create(
+            placement=placement, examiner=examiner, assigned_by=supervisor
+        )
+
+        first = training_services.create_assessment(
+            examiner,
+            placement=placement,
+            competency=competencies[0],
+            validated_data={
+                "scores": {
+                    "planning": "competent",
+                    "technique": "advanced_beginner",
+                    "safety": "competent",
+                    "professionalism": "proficient",
+                },
+                "overall_level": "competent",
+                "feedback": "Synthetic demo feedback (fictional).",
+            },
+        )
+        training_services.submit_assessment(first, actor=examiner)
+        training_services.decide_assessment(
+            first, actor=supervisor, decision="approved",
+            feedback="Synthetic demo approval (fictional).",
+        )
+
+        training_services.create_assessment(
+            examiner,
+            placement=placement,
+            competency=competencies[1],
+            validated_data={
+                "scores": {"planning": "advanced_beginner"},
+                "overall_level": "advanced_beginner",
+                "feedback": "Synthetic demo draft feedback (fictional).",
+            },
         )
 
     def _seed_logbook(self):

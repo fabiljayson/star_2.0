@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.organizations",
     "apps.logbook",
+    "apps.training",
 ]
 
 MIDDLEWARE = [

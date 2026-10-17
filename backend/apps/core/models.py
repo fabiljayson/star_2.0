@@ -68,6 +68,22 @@ class AuditEvent(UUIDModel, TimeStampedModel):
         PARTICIPANT_REMOVED = "procedure.participant_removed", "Participant removed"
         ATTACHMENT_ADDED = "procedure.attachment_added", "Attachment added"
         ATTACHMENT_REMOVED = "procedure.attachment_removed", "Attachment removed"
+        PLACEMENT_CREATED = "placement.created", "Training placement created"
+        PLACEMENT_UPDATED = "placement.updated", "Training placement updated"
+        PLACEMENT_COMPLETED = "placement.completed", "Training placement completed"
+        PLACEMENT_CANCELLED = "placement.cancelled", "Training placement cancelled"
+        EXAMINER_ASSIGNED = "placement.examiner_assigned", "Examiner assigned"
+        EXAMINER_REVOKED = "placement.examiner_revoked", "Examiner assignment revoked"
+        COMPETENCY_CREATED = "competency.created", "Competency created"
+        COMPETENCY_UPDATED = "competency.updated", "Competency updated"
+        RUBRIC_VERSION_CREATED = (
+            "competency.rubric_version_created",
+            "Rubric version created",
+        )
+        ASSESSMENT_CREATED = "assessment.created", "Competency assessment created"
+        ASSESSMENT_UPDATED = "assessment.updated", "Competency assessment updated"
+        ASSESSMENT_SUBMITTED = "assessment.submitted", "Competency assessment submitted"
+        ASSESSMENT_DECIDED = "assessment.decided", "Competency assessment decided"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
