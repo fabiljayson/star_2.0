@@ -23,6 +23,8 @@ STAR. It is updated at every milestone.
                     │  │                 MFA, recovery       │  │
                     │  │ apps.organizations institutions,    │  │
                     │  │                 departments, invites │  │
+                    │  │ apps.logbook     surgical records,   │  │
+                    │  │                 lifecycle, files     │  │
                     │  └─────────────────────────────────────┘  │
                     └───────────────┬───────────────────────────┘
                                     │
@@ -74,6 +76,57 @@ clients only render what the API returns.
 
 Data dictionary and ER diagram: `docs/data-dictionary.md` (Milestone 7).
 
+### Domain model (Milestone 2 — surgical logbook, `apps.logbook`)
+
+- **`PatientReference`** — random `PR-XXXXXXXX` code, unique *per
+  institution*, generated with `secrets` (never derived from identifiers).
+  STAR stores **no** re-identification mapping: the authoritative link stays
+  in the hospital's own record system.
+- **`SurgicalProcedure`** — unique human reference `STAR-YYYY-XXXXXX`,
+  institution/department/specialty scope, pseudonymous patient reference,
+  clinical note fields (indication, summary, complications, postoperative,
+  training objectives), lifecycle status, author, `version` counter.
+- **`ProcedureParticipant`** — user + role (primary operator / assistant /
+  observer), unique per record; the author is never a participant row.
+- **`ProcedureNoteVersion`** — immutable JSON snapshot of the note fields,
+  taken at submission and at every post-approval correction (sequenced per
+  record).
+- **`ReviewDecision`** — reviewer, decision (start review / approve /
+  request correction / reject), from→to status, mandatory reason for
+  non-approvals, record version reviewed.
+- **`Attachment`** — private-storage file with original name, *detected*
+  content kind, size, SHA-256, uploader. Binaries never live in relational
+  tables.
+
+#### Record lifecycle
+
+```
+draft ──submit──▶ submitted ──start_review──▶ under_review
+  ▲                  │  │                          │
+  │                  │  └────── approve ───────────┤
+  │                  └──── approve/return ─────────┤
+  │                                                ▼
+  └───── edit (author) ◀── return (reason) ◀── approved ──archive──▶ archived
+                              │                    │
+                              └── resubmit ────────┘   (edit ⇒ new note
+                                                         version + re-review)
+```
+
+Rules enforced in `apps/logbook/services.py`:
+
+- Only the **author** edits/submits; only institution
+  **supervisor/examiner/admin** reviews; reviewers never review their own
+  records (no self-approval).
+- `request_correction` / `reject` require a reason; invalid transitions
+  return `400`, out-of-scope records return `404` (existence never leaks).
+- Editing an **approved** record stores the approved content as a note
+  version, bumps `version`, and returns the record to `submitted`.
+- Archived records are read-only.
+- Visibility: author + participants + institution-wide roles
+  (supervisor/examiner/manager/admin). Platform administrators and
+  supplier/buyer accounts see **nothing** clinical by default; independent
+  surgeons may create in any institution but read only their own records.
+
 ## 4. Authentication & authorization
 
 1. `POST /auth/login/` → short-lived access + rotating refresh (both carry
@@ -119,4 +172,10 @@ Data dictionary and ER diagram: `docs/data-dictionary.md` (Milestone 7).
   JWT auth + MFA + recovery, roles/memberships/invitations, institutions and
   departments, audit trail, OpenAPI docs, health check, 54 automated tests,
   CI workflow.
-- **M2–M7:** per README milestones.
+- **M2 (done):** `apps.logbook` — pseudonymous patient references, surgical
+  records with lifecycle state machine, participants, submission/review/
+  approval/return/archive actions, post-approval versioning, private
+  attachment storage with content sniffing and permission-checked download,
+  institution-scoped visibility (404 out of scope), demo seed, 52 new tests
+  (106 total).
+- **M3–M7:** per README milestones.

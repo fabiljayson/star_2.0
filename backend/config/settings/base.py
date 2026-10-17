@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.organizations",
+    "apps.logbook",
 ]
 
 MIDDLEWARE = [

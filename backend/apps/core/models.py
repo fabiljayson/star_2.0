@@ -54,6 +54,20 @@ class AuditEvent(UUIDModel, TimeStampedModel):
         INVITATION_SENT = "invitation.sent", "Invitation sent"
         INVITATION_ACCEPTED = "invitation.accepted", "Invitation accepted"
         INVITATION_REVOKED = "invitation.revoked", "Invitation revoked"
+        PATIENT_REF_CREATED = "patient_ref.created", "Patient reference created"
+        PATIENT_REF_DEACTIVATED = "patient_ref.deactivated", "Patient reference deactivated"
+        PROCEDURE_CREATED = "procedure.created", "Surgical record created"
+        PROCEDURE_UPDATED = "procedure.updated", "Surgical record updated"
+        PROCEDURE_SUBMITTED = "procedure.submitted", "Surgical record submitted"
+        PROCEDURE_REVIEW_STARTED = "procedure.review_started", "Review started"
+        PROCEDURE_APPROVED = "procedure.approved", "Surgical record approved"
+        PROCEDURE_RETURNED = "procedure.returned", "Surgical record returned"
+        PROCEDURE_CORRECTED = "procedure.corrected", "Approved record corrected"
+        PROCEDURE_ARCHIVED = "procedure.archived", "Surgical record archived"
+        PARTICIPANT_ADDED = "procedure.participant_added", "Participant added"
+        PARTICIPANT_REMOVED = "procedure.participant_removed", "Participant removed"
+        ATTACHMENT_ADDED = "procedure.attachment_added", "Attachment added"
+        ATTACHMENT_REMOVED = "procedure.attachment_removed", "Attachment removed"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -1,6 +1,7 @@
 """Create synthetic demonstration data (never real people or institutions)."""
 
 import secrets
+from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -142,8 +143,81 @@ class Command(BaseCommand):
                 user.save()
             RoleAssignment.objects.get_or_create(user=user, role=role, institution=None)
 
+        self._seed_logbook()
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demonstration data ready. Shared demo password: {DEMO_PASSWORD}"
             )
+        )
+
+    def _seed_logbook(self):
+        """Synthetic surgical records — clearly fictional, no real patients."""
+        from apps.logbook import services as logbook_services
+        from apps.logbook.models import (
+            PatientReference,
+            ProcedureParticipant,
+            SurgicalProcedure,
+        )
+
+        User = get_user_model()
+        if SurgicalProcedure.objects.exists():
+            return
+
+        institution = Institution.objects.filter(
+            name="Demo General Hospital — North"
+        ).first()
+        if institution is None:
+            return
+        trainee = User.objects.get(email="trainee.demo@example.test")
+        trainee2 = User.objects.get(email="trainee2.demo@example.test")
+        supervisor = User.objects.get(email="supervisor.demo@example.test")
+        department = Department.objects.filter(institution=institution).first()
+
+        def _reference(label):
+            return PatientReference.objects.create(
+                institution=institution, created_by=trainee, label=label
+            )
+
+        def _procedure(name, date, *, ref, status="draft"):
+            procedure = SurgicalProcedure.objects.create(
+                institution=institution,
+                department=department,
+                patient_reference=ref,
+                author=trainee,
+                procedure_date=date,
+                procedure_name=name,
+                category="elective",
+                indication="DEMOGRAPHIC-FREE synthetic indication text.",
+                summary="Synthetic operative summary used for demonstration only.",
+                postoperative="Synthetic recovery notes for demo purposes.",
+            )
+            ProcedureParticipant.objects.create(
+                procedure=procedure, user=trainee2, role="assistant"
+            )
+            if status == "submitted":
+                logbook_services.submit_procedure(procedure, actor=trainee)
+            elif status == "approved":
+                logbook_services.submit_procedure(procedure, actor=trainee)
+                logbook_services.review_procedure(
+                    procedure, actor=supervisor, decision="approve"
+                )
+            return procedure
+
+        _procedure(
+            "Synthetic demo — laparoscopic cholecystectomy",
+            date(2026, 10, 6),
+            ref=_reference("DEMO OR-1 (fictional)"),
+            status="approved",
+        )
+        _procedure(
+            "Synthetic demo — inguinal hernia repair",
+            date(2026, 10, 12),
+            ref=_reference("DEMO OR-2 (fictional)"),
+            status="submitted",
+        )
+        _procedure(
+            "Synthetic demo — appendectomy (draft)",
+            date(2026, 10, 15),
+            ref=_reference("DEMO OR-3 (fictional)"),
         )

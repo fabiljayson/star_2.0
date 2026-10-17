@@ -10,8 +10,8 @@ STAR is a documentation, education and commerce platform. It does **not**
 diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
-> **Status:** Milestone 1 (foundations) implemented and tested. Milestones 2–7
-> (surgical logbook, voice, training, reporting, marketplace, web UI,
+> **Status:** Milestones 1–2 (foundations + surgical logbook) implemented and
+> tested. Milestones 3–7 (voice, training, reporting, marketplace, web UI,
 > hardening) are planned — see [Milestones](#milestones).
 
 ---
@@ -48,6 +48,8 @@ medical record system.
 - `apps.core` — audit trail, error format, pagination, permissions, health.
 - `apps.accounts` — users, roles, JWT auth, MFA, recovery, invitations.
 - `apps.organizations` — institutions, departments, specialties, memberships.
+- `apps.logbook` — pseudonymous patient references, surgical records,
+  participants, review lifecycle, note versioning, private attachments.
 
 ---
 
@@ -105,7 +107,7 @@ platform-administrator rights (`is_platform_admin`, staff access to
 
 ```bash
 cd backend
-uv run pytest          # 54 tests (Milestone 1)
+uv run pytest          # 106 tests (Milestones 1 + 2)
 uv run ruff check .    # lint
 uv run python manage.py makemigrations --check --dry-run   # migrations up to date?
 ```
@@ -146,6 +148,11 @@ Endpoint groups implemented in Milestone 1:
 | Users | `GET|PATCH /api/v1/users/me/`, `GET /api/v1/users/` (institution-scoped) |
 | Organizations | `/api/v1/institutions/`, `/departments/`, `/specialties/`, `/memberships/`, `/invitations/` (+ `accept/`, `revoke/`) |
 | Audit | `GET /api/v1/audit/` (platform or institution administrators) |
+| Patient references | `GET|POST /api/v1/patients/references/`, `GET|PATCH .../{id}/` |
+| Surgical records | `GET|POST /api/v1/procedures/`, `GET|PATCH .../{id}/` |
+| Record actions | `POST .../{id}/submit/`, `GET|POST .../{id}/reviews/`, `POST .../{id}/archive/`, `GET .../{id}/versions/` |
+| Participants | `GET|POST .../{id}/participants/`, `DELETE .../{id}/participants/{pid}/` |
+| Attachments | `GET|POST .../{id}/attachments/`, `DELETE .../{id}/attachments/{aid}/`, `GET .../{id}/attachments/{aid}/download/` |
 | Ops | `GET /api/v1/health/`, `/schema/`, `/docs/` |
 
 ---
@@ -163,9 +170,10 @@ Endpoint groups implemented in Milestone 1:
 ## Demo data
 
 `uv run python manage.py seed_demo` creates **synthetic** institutions
-(prefixed "Demo"), fictional accounts (all `@demo.test` addresses) and a
-global specialty catalog. No real people, institutions or patient data are
-ever included.
+(prefixed "Demo"), fictional accounts (all `@demo.test` addresses), a global
+specialty catalog and three fictional surgical records (draft / submitted /
+approved) with pseudonymous `PR-…` patient references. No real people,
+institutions or patient data are ever included.
 
 - Shared demo password (development only): `Demo!Passw0rd2026`
 - The seed prints a random password for `platform-admin@demo.test` on first
@@ -184,6 +192,7 @@ star/
 │   ├── apps/core/           # audit, permissions, errors, pagination, health
 │   ├── apps/accounts/       # users, roles, JWT, MFA, recovery, invitations
 │   ├── apps/organizations/  # institutions, departments, specialties
+│   ├── apps/logbook/        # surgical records, lifecycle, attachments
 │   └── conftest.py          # shared pytest fixtures
 ├── web/                     # React + Vite app (Milestone 6)
 ├── docs/                    # architecture, requirements, security, ...
@@ -199,7 +208,7 @@ star/
 | # | Scope | Status |
 |---|-------|--------|
 | 1 | Foundations: structure, database, auth, roles, institutions, audit, CI | **done** |
-| 2 | Surgical logbook: records, participants, lifecycle, attachments | planned |
+| 2 | Surgical logbook: records, participants, lifecycle, attachments | **done** |
 | 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | planned |
 | 4 | Reports and exports (PDF/CSV) | planned |
 | 5 | Marketplace: suppliers, inventory, orders, sandbox payments | planned |
@@ -219,6 +228,15 @@ See `docs/architecture.md` for design decisions and security notes.
   everywhere, password reset, account disable).
 - Institution-scoped roles are enforced server-side on every protected
   endpoint; cross-institution reads return `403` without leaking content.
+- Clinical records return `404` (never `403`) outside the caller's scope, so
+  record existence itself is not disclosed; platform administrators and
+  marketplace (supplier/buyer) accounts have **no** clinical access by default.
+- Surgical records cannot be edited while submitted/under review/archived;
+  post-approval edits create an immutable note version and force re-review.
+- Attachments are stored outside the web root in private storage; downloads
+  require a JWT and permission check, with `Cache-Control: private, no-store`.
+  Uploads are validated by size, extension allowlist **and** magic-byte
+  content sniffing (filenames/MIME types are never trusted).
 - Login, registration, password and MFA endpoints are rate-limited.
 - Audit events are append-only through the API (no create/update endpoints).
 - Optional TOTP second factor; `REQUIRE_MFA_FOR_PLATFORM_ADMINS=true` blocks
