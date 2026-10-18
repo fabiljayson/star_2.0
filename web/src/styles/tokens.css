@@ -1,0 +1,70 @@
+/* ── Design tokens — source of truth: DESIGN.md ── */
+:root {
+  color-scheme: dark;
+
+  /* Brand (DESIGN.md frontmatter) */
+  --color-primary: #00adb5;
+  --color-primary-strong: #222831;
+  --color-primary-soft: #b8eef0;
+  --color-accent: #00adb5;
+
+  /* Surfaces */
+  --color-surface: #eeeeee;
+  --color-surface-muted: #b8eef0;
+
+  /* Text & border */
+  --color-text: #1d232c;
+  --color-border: #303640;
+
+  /* Feedback */
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* Derived tokens (minimal, documented: light-content helpers + dark chrome) */
+  --color-surface-raised: #f7f8f9;
+  --color-surface-input: #ffffff;
+  --color-border-soft: #c9ced4;
+  --color-text-muted: #55606e;
+  --color-text-inverse: #f2f6f7;
+  --color-text-inverse-muted: #a9b4bd;
+  --color-canvas: #10161d;
+  --color-canvas-deep: #0b0f14;
+  --color-glass-tint: rgba(34, 40, 49, 0.55);
+  --color-glass-rim: rgba(242, 246, 247, 0.16);
+  --color-glass-highlight: rgba(255, 255, 255, 0.1);
+  --color-overlay: rgba(11, 15, 20, 0.62);
+  --color-nav-active-bg: rgba(0, 173, 181, 0.16);
+  --color-hover-wash: rgba(29, 35, 44, 0.06);
+
+  /* Typography (DESIGN.md: Atkinson Hyperlegible, weights 400/700) */
+  --font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
+
+  /* Spacing scale 4/8/12/16/24/32/48 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-section: 48px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Motion (DESIGN.md: 120–260ms) */
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
+  --motion-slow: 260ms;
+
+  /* Elevation */
+  --shadow-panel: 0 18px 40px rgba(4, 8, 12, 0.45);
+  --shadow-card: 0 10px 30px rgba(4, 8, 12, 0.35);
+  --shadow-pop: 0 24px 60px rgba(4, 8, 12, 0.55);
+}
