@@ -233,6 +233,13 @@ Rules enforced in `apps/logbook/services.py`:
   row-level visibility filter so a report can never contain records its requester
   could not see, and never expose patient reference codes — 23 new tests
   (226 total).
-- **M4b (planned):** training reports (trainee progress, competency assessments,
-  examiner reviews, placement completion, institution aggregates).
+- **M4b (done):** training reports on top of the same engine — trainee
+  progress (per placement: examiners, assessment breakdown), competency
+  assessment report (assessor/trainee views), examiner review history,
+  placement completion (with an honest `n/a` completion when no assessment
+  exists rather than a misleading 0%), institution-level aggregated summary;
+  optional `target_user` restricted to supervisors/managers, structured
+  columns only (assessment feedback and decision reasons never leave the
+  platform), report jobs bounded to the job's institution — 19 new tests
+  (245 total). Milestone 4 complete.
 - **M5–M7:** per README milestones.

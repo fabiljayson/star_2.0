@@ -10,9 +10,9 @@ STAR is a documentation, education and commerce platform. It does **not**
 diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
-> **Status:** Milestones 1–3 delivered (foundations, surgical logbook,
-> education, mock transcription and in-app notifications); Milestone 4a adds
-> real reports/exports (CSV + PDF, logbook reports).
+> **Status:** Milestones 1–4 delivered (foundations, surgical logbook,
+> education, mock transcription, in-app notifications and reports/exports).
+> Milestone 5 (marketplace) is next.
 > See [Milestones](#milestones).
 
 ---
@@ -223,7 +223,7 @@ star/
 | 1 | Foundations: structure, database, auth, roles, institutions, audit, CI | **done** |
 | 2 | Surgical logbook: records, participants, lifecycle, attachments | **done** |
 | 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **done** (203 tests) |
-| 4 | Reports and exports (PDF/CSV) | **in progress** (4a: logbook reports done) |
+| 4 | Reports and exports (PDF/CSV) | **done** (9 report types, 245 tests) |
 | 5 | Marketplace: suppliers, inventory, orders, sandbox payments | planned |
 | 6 | Complete web (and mobile) interfaces | planned |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | planned |

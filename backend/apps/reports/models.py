@@ -14,6 +14,11 @@ class ReportType(models.TextChoices):
     ACTIVITY_BY_DATE = "activity_by_date", "Activity by date range"
     ACTIVITY_BY_SPECIALTY = "activity_by_specialty", "Activity by specialty and institution"
     PARTICIPATION_ROLES = "participation_roles", "Procedures grouped by participation role"
+    TRAINEE_PROGRESS = "trainee_progress", "Trainee progress report"
+    COMPETENCY_ASSESSMENTS = "competency_assessments", "Competency assessment report"
+    EXAMINER_REVIEWS = "examiner_reviews", "Examiner review report"
+    PLACEMENT_COMPLETION = "placement_completion", "Placement completion report"
+    INSTITUTION_SUMMARY = "institution_summary", "Institution-level aggregated report"
 
 
 class ReportFormat(models.TextChoices):
@@ -85,9 +90,10 @@ class ReportJob(UUIDModel, TimeStampedModel):
         date_to = _parse_date(parameters.get("date_to"), "date_to")
         if date_from and date_to and date_from > date_to:
             raise ValidationError({"date_from": "date_from must not be after date_to."})
-        if self.report_type == ReportType.INDIVIDUAL_LOGBOOK and not parameters.get(
-            "target_user"
-        ):
+        if self.report_type in {
+            ReportType.INDIVIDUAL_LOGBOOK,
+            ReportType.TRAINEE_PROGRESS,
+        } and not parameters.get("target_user"):
             raise ValidationError({"target_user": "This report needs a target_user."})
 
     @property

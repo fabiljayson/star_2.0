@@ -29,6 +29,22 @@ REPORT_READER_ROLES = frozenset(
 LOGBOOK_EXPORTER_ROLES = frozenset(
     {UserRole.DEPARTMENT_MANAGER, UserRole.INSTITUTION_ADMIN}
 )
+# Roles that may target another member for training reports.
+TRAINING_TARGETER_ROLES = frozenset(
+    {UserRole.SUPERVISOR, UserRole.DEPARTMENT_MANAGER, UserRole.INSTITUTION_ADMIN}
+)
+# Report types that require an explicit target_user parameter.
+TARGETED_REPORT_TYPES = frozenset(
+    {ReportType.INDIVIDUAL_LOGBOOK, ReportType.TRAINEE_PROGRESS}
+)
+# Report types where a non-manager only sees their own participation.
+PARTICIPATION_REPORT_TYPES = frozenset(
+    {
+        ReportType.COMPETENCY_ASSESSMENTS,
+        ReportType.EXAMINER_REVIEWS,
+        ReportType.PLACEMENT_COMPLETION,
+    }
+)
 
 
 def _is_member(user, institution_id) -> bool:
@@ -46,6 +62,16 @@ def can_request_report(user, report_type: str, institution_id, target=None) -> b
         if target is None or target.pk == user.pk:
             return True
         return has_institution_role(user, institution_id, LOGBOOK_EXPORTER_ROLES)
+    if report_type == ReportType.TRAINEE_PROGRESS:
+        if target is None or target.pk == user.pk:
+            return True
+        return has_institution_role(user, institution_id, TRAINING_TARGETER_ROLES)
+    if report_type in PARTICIPATION_REPORT_TYPES:
+        if target is not None and target.pk != user.pk:
+            return has_institution_role(user, institution_id, TRAINING_TARGETER_ROLES)
+        return True
+    if report_type == ReportType.INSTITUTION_SUMMARY:
+        return has_institution_role(user, institution_id, REPORT_READER_ROLES)
     return has_institution_role(user, institution_id, REPORT_READER_ROLES)
 
 
@@ -75,7 +101,10 @@ def request_report(
     request=None,
 ) -> ReportJob:
     target = None
-    if report_type == ReportType.INDIVIDUAL_LOGBOOK:
+    if report_type in TARGETED_REPORT_TYPES:
+        target = resolve_target(user, institution.pk, parameters.get("target_user"))
+        parameters = {**parameters, "target_user": str(target.pk)}
+    elif parameters.get("target_user"):
         target = resolve_target(user, institution.pk, parameters.get("target_user"))
         parameters = {**parameters, "target_user": str(target.pk)}
     if not can_request_report(user, report_type, institution.pk, target=target):
@@ -107,7 +136,7 @@ def request_report(
 def _generate(job: ReportJob, *, request=None) -> ReportJob:
     try:
         title, headers, rows = build_report(
-            job.report_type, job.requester, job.parameters
+            job.report_type, job.requester, job.parameters, job.institution
         )
         limit = settings.REPORT_SYNC_ROW_LIMIT
         if len(rows) > limit:
