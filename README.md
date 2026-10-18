@@ -10,9 +10,10 @@ STAR is a documentation, education and commerce platform. It does **not**
 diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
-> **Status:** Milestones 1–4 delivered (foundations, surgical logbook,
-> education, mock transcription, in-app notifications and reports/exports).
-> Milestone 5 (marketplace) is next.
+> **Status:** Milestones 1–5a delivered (foundations, surgical logbook,
+> education, mock transcription, in-app notifications, reports/exports and the
+> marketplace catalog/inventory/orders).
+> Milestone 5b (sandbox payments, shipping, refunds, disputes) is next.
 > See [Milestones](#milestones).
 
 ---
@@ -164,6 +165,7 @@ Endpoint groups implemented in Milestone 1:
 | Transcription | `POST /api/v1/procedures/{id}/transcribe/` (author only, deterministic mock, audio never stored) |
 | Notifications | `GET /api/v1/notifications/`, `GET .../unread-count/`, `POST .../read/`, `POST .../read-all/`, `GET|PUT|PATCH .../preferences/` |
 | Reports | `GET|POST /api/v1/reports/`, `GET .../{id}/`, `GET .../{id}/download/` (CSV/PDF, links expire) |
+| Marketplace | `GET /api/v1/marketplace/categories/`, `GET .../products/`, `GET|POST|PATCH .../supplier/profile/`, `GET|POST|PATCH|DELETE .../supplier/products/`, `POST .../supplier/products/{id}/restock/`, `GET|POST .../cart/items/`, `POST .../checkout/`, `GET .../orders/`, `POST .../orders/{id}/cancel/` |
 | Ops | `GET /api/v1/health/`, `/schema/`, `/docs/` |
 
 ---
@@ -224,7 +226,8 @@ star/
 | 2 | Surgical logbook: records, participants, lifecycle, attachments | **done** |
 | 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **done** (203 tests) |
 | 4 | Reports and exports (PDF/CSV) | **done** (9 report types, 245 tests) |
-| 5 | Marketplace: suppliers, inventory, orders, sandbox payments | planned |
+| 5a | Marketplace: suppliers, catalog, inventory, cart, orders | **done** (265 tests) |
+| 5b | Sandbox payments, shipping, refunds, disputes | planned |
 | 6 | Complete web (and mobile) interfaces | planned |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | planned |
 

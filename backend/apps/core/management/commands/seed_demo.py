@@ -145,12 +145,61 @@ class Command(BaseCommand):
 
         self._seed_logbook()
         self._seed_training()
+        self._seed_marketplace()
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demonstration data ready. Shared demo password: {DEMO_PASSWORD}"
             )
         )
+
+    def _seed_marketplace(self):
+        """Synthetic marketplace: verified supplier, one approved product (fictional)."""
+        from decimal import Decimal
+
+        from apps.marketplace.models import Product, ProductCategory, SupplierProfile
+
+        User = get_user_model()
+        if Product.objects.exists():
+            return
+
+        supplier = User.objects.get(email="supplier.demo@example.test")
+        admin = User.objects.filter(is_platform_admin=True).first()
+        profile, created = SupplierProfile.objects.get_or_create(
+            user=supplier,
+            defaults={
+                "company_name": "Demo Surgical Supplies",
+                "contact_email": "supplier.demo@example.test",
+                "verification_status": "verified",
+                "verified_by": admin,
+            },
+        )
+        if created and admin is not None:
+            from django.utils import timezone
+
+            profile.verified_at = timezone.now()
+            profile.save()
+
+        category, _ = ProductCategory.objects.get_or_create(
+            name="Forceps", slug="forceps"
+        )
+        product = Product.objects.create(
+            supplier=profile,
+            category=category,
+            name="Demo Disposable Forceps",
+            description="Synthetic marketplace demo product (fictional).",
+            sku="DEM-FP-001",
+            unit_price=Decimal("15000"),
+            available_quantity=10,
+            approval_status="approved",
+            approved_by=admin,
+            is_published=True,
+        )
+        if admin is not None:
+            from django.utils import timezone
+
+            product.approved_at = timezone.now()
+            product.save()
 
     def _seed_training(self):
         """Synthetic placements, competencies and assessments (fictional)."""

@@ -159,6 +159,35 @@ Rules enforced in `apps/logbook/services.py`:
   supplier/buyer accounts see **nothing** clinical by default; independent
   surgeons may create in any institution but read only their own records.
 
+#### Marketplace model (Milestone 5a — `apps.marketplace`)
+
+- **Money:** integer amounts in XOF (ISO `XOF`, zero decimals) —
+  `DecimalField(max_digits=12, decimal_places=0)`; currency stored on
+  products and orders.
+- **Supplier profile:** one per `SUPPLIER` account; starts `pending`,
+  platform admin verifies (`verified`/`rejected`) or suspends with a reason.
+  Only verified suppliers can sell; suspension blocks catalog management.
+- **Product:** belongs to a supplier + category; SKU unique per supplier;
+  `approval_status` (`pending` → `approved`/`rejected` by platform admin),
+  `is_published`, `is_active`. Public catalog shows only
+  approved + published products of verified suppliers.
+- **Inventory:** `available_quantity` and `reserved_quantity` with a
+  database CHECK (`reserved ≤ available`); `free_quantity` is a computed
+  property; every change is an `InventoryMovement` row (restocked,
+  reserved, released); no backorders — quantities are validated at cart
+  and again under row locks at checkout.
+- **Cart & checkout:** buyers only; checkout runs in one transaction with
+  `select_for_update` on products, creates one `Order` per supplier
+  (multi-supplier carts), snapshots line items (name, SKU, description,
+  unit price, quantity), reserves stock, and clears the cart. Price or
+  availability races surface as a 400 with per-item details.
+- **Orders:** unique reference `ORD-YYYY-XXXXXX`, status machine
+  (`pending_payment` → … with `cancelled` release), cancellation by buyer
+  or platform admin releases reservations and logs movements; supplier
+  sees its orders, buyer sees its own.
+- **Isolation:** supplier/buyer roles have no clinical access
+  (`MARKETPLACE_ONLY_ROLES` in `apps/logbook/services.py`).
+
 ## 4. Authentication & authorization
 
 1. `POST /auth/login/` → short-lived access + rotating refresh (both carry
@@ -242,4 +271,14 @@ Rules enforced in `apps/logbook/services.py`:
   columns only (assessment feedback and decision reasons never leave the
   platform), report jobs bounded to the job's institution — 19 new tests
   (245 total). Milestone 4 complete.
-- **M5–M7:** per README milestones.
+- **M5a (done):** `apps.marketplace` — supplier registration and platform
+  verification/suspension, product categories and an approval workflow
+  (supplier lists a product as `pending`, platform admin approves or
+  rejects), integer XOF pricing, inventory with reserved quantities and a
+  `reserved ≤ available` CHECK, restock movements, buyer-only cart and
+  checkout (row locks prevent overselling, one order per supplier,
+  line-item snapshots, `ORD-YYYY-XXXXXX` references), order history with
+  buyer/supplier scoping and cancellation that releases reservations and
+  logs the release; audit events `marketplace.*` — 20 new tests
+  (265 total).
+- **M5b–M7:** per README milestones.

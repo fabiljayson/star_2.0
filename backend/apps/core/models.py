@@ -92,6 +92,16 @@ class AuditEvent(UUIDModel, TimeStampedModel):
         REPORT_REQUESTED = "report.requested", "Report requested"
         REPORT_DOWNLOADED = "report.downloaded", "Report downloaded"
         REPORT_FAILED = "report.failed", "Report generation failed"
+        SUPPLIER_REGISTERED = "marketplace.supplier_registered", "Supplier profile registered"
+        SUPPLIER_VERIFIED = "marketplace.supplier_verified", "Supplier verified"
+        SUPPLIER_SUSPENDED = "marketplace.supplier_suspended", "Supplier suspended"
+        PRODUCT_LISTED = "marketplace.product_listed", "Product listed"
+        PRODUCT_APPROVED = "marketplace.product_approved", "Product approved"
+        PRODUCT_REJECTED = "marketplace.product_rejected", "Product rejected"
+        ORDER_PLACED = "marketplace.order_placed", "Order placed"
+        ORDER_CANCELLED = "marketplace.order_cancelled", "Order cancelled"
+        INVENTORY_RESERVED = "marketplace.inventory_reserved", "Inventory reserved"
+        INVENTORY_RELEASED = "marketplace.inventory_released", "Inventory released"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
