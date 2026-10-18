@@ -14,7 +14,10 @@ medical record system.
 > education, mock transcription, in-app notifications, reports/exports and the
 > full marketplace: catalog, inventory, orders, sandbox payments, shipping,
 > refunds and disputes).
-> Milestone 6 (web interfaces) is next.
+> Milestone 6 is in progress: the React web app covers authentication,
+> dashboard, logbook, training, reporting, marketplace, notifications and the
+> institution, supplier and platform administration workspaces.
+> The Flutter mobile client is still outstanding.
 > See [Milestones](#milestones).
 
 ---
@@ -42,8 +45,8 @@ medical record system.
 | Backend   | Python 3.14, Django 6.1, Django REST Framework 3.18, PostgreSQL 16 |
 | Auth      | JWT (simplejwt) with refresh rotation, blacklist, `auth_version` revocation, optional TOTP MFA |
 | API docs  | OpenAPI via drf-spectacular (`/api/v1/docs/`) |
-| Web app   | React + Vite + TypeScript (planned, Milestone 6) |
-| Mobile    | Flutter (planned, after the web app) |
+| Web app   | React 19 + Vite + TypeScript, React Router and TanStack Query |
+| Mobile    | Flutter (planned) |
 | Tooling   | uv (Python), npm (web), Docker Compose (PostgreSQL), ruff, pytest |
 
 **Domain apps** (backend):
@@ -88,10 +91,16 @@ uv run python manage.py seed_demo
 
 # 6. Run the API on port 8002
 uv run python manage.py runserver 0.0.0.0:8002
+
+# 7. In a second terminal, run the web app on port 5174
+cd ../web
+npm install
+npm run dev
 ```
 
 Then open:
 
+- Web app: <http://localhost:5174/> (Vite proxies `/api` to the API)
 - API docs (Swagger UI): <http://localhost:8002/api/v1/docs/>
 - OpenAPI schema: <http://localhost:8002/api/v1/schema/>
 - Health check: <http://localhost:8002/api/v1/health/>
@@ -112,9 +121,15 @@ platform-administrator rights (`is_platform_admin`, staff access to
 
 ```bash
 cd backend
-uv run pytest          # 170 tests (Milestones 1–2 + training/M3)
+uv run pytest          # 312 tests (Milestones 1–5)
 uv run ruff check .    # lint
 uv run python manage.py makemigrations --check --dry-run   # migrations up to date?
+
+cd ../web
+npm run lint           # oxlint
+npx tsc -b             # typecheck
+npm run test           # vitest (57 tests)
+npm run build          # production build
 ```
 
 Tests run against a dedicated `test_star` PostgreSQL database
@@ -172,13 +187,33 @@ Endpoint groups implemented in Milestone 1:
 
 ---
 
+## Web app screens
+
+The React client (`web/`) implements every destination it links to; no
+navigation entry points at an empty page.
+
+| Workspace | Routes |
+|-----------|--------|
+| Shared | `/`, `/login`, `/register`, `/verify-email`, `/forgot-password`, `/reset-password`, `/mfa`, `/dashboard`, `/notifications`, `/account` |
+| Surgical logbook | `/logbook`, `/logbook/new`, `/logbook/:id` (edit draft, attachments, dictation, participants, review history) |
+| Training | `/training`, `/training/placements/new`, `/training/placements/:id`, `/training/competencies`, `/training/competencies/:id`, `/training/assessments`, `/training/assessments/new`, `/training/assessments/:id` |
+| Reporting | `/reports` (CSV/PDF, in-scope only) |
+| Marketplace | `/marketplace`, `/marketplace/products/:id`, `/marketplace/cart`, `/marketplace/orders`, `/marketplace/orders/:id` |
+| Institution admin | `/institution` — profile, departments, members/roles, invitations, audit |
+| Supplier | `/supplier` — profile/verification, catalog & inventory, orders |
+| Platform admin | `/admin` — supplier verification, product moderation, categories, disputes, audit |
+
+Role gating is applied twice: navigation items only appear for accounts that
+hold the required role, and each workspace also renders an explicit
+access-denied state when opened directly without that role.
+
 ## Ports
 
 | Service    | Port |
 |------------|------|
 | Django API | 8002 |
 | PostgreSQL | 5433 |
-| Web (Vite, future) | 5174 |
+| Web (Vite) | 5174 |
 
 ---
 
@@ -218,7 +253,7 @@ star/
 │   ├── apps/logbook/        # surgical records, lifecycle, attachments
 │   ├── apps/training/       # placements, competencies, assessments
 │   └── conftest.py          # shared pytest fixtures
-├── web/                     # React + Vite app (Milestone 6)
+├── web/                     # React + Vite app (Milestone 6, port 5174)
 ├── docs/                    # architecture, requirements, security, ...
 ├── docker-compose.yml       # PostgreSQL 16 (port 5433)
 ├── .env.example             # every environment variable, safe placeholders
@@ -236,7 +271,7 @@ star/
 | 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **done** (203 tests) |
 | 4 | Reports and exports (PDF/CSV) | **done** (9 report types, 245 tests) |
 | 5 | Marketplace: suppliers, catalog, inventory, orders, sandbox payments, shipping, refunds, disputes, marketplace reports | **done** (312 tests) |
-| 6 | Complete web (and mobile) interfaces | planned |
+| 6 | Complete web interfaces (mobile outstanding) | **in progress** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | planned |
 
 See `docs/architecture.md` for design decisions and security notes.

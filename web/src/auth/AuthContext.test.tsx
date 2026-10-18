@@ -8,7 +8,7 @@ import type { User } from '../lib/types'
 import { jsonResponse, stubFetch } from '../test/helpers'
 
 const testUser: User = {
-  id: 1,
+  id: 'user-1',
   email: 'buyer.demo@example.test',
   first_name: 'Demo',
   last_name: 'Buyer',
@@ -18,9 +18,9 @@ const testUser: User = {
   mfa_enabled: false,
   roles: [
     {
-      id: 10,
+      id: 'role-10',
       role: 'buyer',
-      institution: 1,
+      institution: 'inst-1',
       institution_name: 'Demo Hospital',
       department: null,
       department_name: null,

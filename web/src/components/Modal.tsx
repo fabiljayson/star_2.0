@@ -15,6 +15,8 @@ type ModalProps = {
 export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null)
   const restoreFocusRef = useRef<HTMLElement | null>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
   const titleId = useId()
 
   useEffect(() => {
@@ -22,13 +24,14 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
     restoreFocusRef.current = document.activeElement as HTMLElement | null
     const dialog = dialogRef.current
-    const focusable = dialog?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+    const body = dialog?.querySelector<HTMLElement>('.modal__body')
+    const focusable = body?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
     ;(focusable ?? dialog)?.focus()
 
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') {
         event.stopPropagation()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (event.key !== 'Tab') return
@@ -57,7 +60,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       document.removeEventListener('keydown', onKeyDown, true)
       restoreFocusRef.current?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

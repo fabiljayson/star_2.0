@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '../auth/AuthContext'
 import { setAccessToken, storeRefreshToken } from '../lib/api'
 import type { User } from '../lib/types'
@@ -10,7 +11,7 @@ import { AppShell } from './AppShell'
 import { NAV_ITEMS, filterNavItems, type NavItem } from './nav'
 
 const baseUser: User = {
-  id: 5,
+  id: 'user-5',
   email: 'buyer.demo@example.test',
   first_name: 'Demo',
   last_name: 'Buyer',
@@ -20,7 +21,7 @@ const baseUser: User = {
   mfa_enabled: false,
   roles: [
     {
-      id: 3,
+      id: 'role-3',
       role: 'buyer',
       institution: null,
       institution_name: null,
@@ -39,18 +40,25 @@ function renderShell(userOverrides: Partial<User> = {}) {
   fetcher.on('/users/me/', () =>
     jsonResponse({ ...baseUser, ...userOverrides }),
   )
+  fetcher.on('/notifications/unread-count/', () => jsonResponse({ count: 0 }))
   fetcher.on('/auth/logout/', () => jsonResponse(null, 204))
+
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
 
   render(
     <MemoryRouter initialEntries={['/account']}>
-      <AuthProvider>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route path="/account" element={<div>Account content</div>} />
-          </Route>
-          <Route path="/login" element={<div data-testid="login">Login</div>} />
-        </Routes>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route path="/account" element={<div>Account content</div>} />
+            </Route>
+            <Route path="/login" element={<div data-testid="login">Login</div>} />
+          </Routes>
+        </AuthProvider>
+      </QueryClientProvider>
     </MemoryRouter>,
   )
   return fetcher
@@ -88,7 +96,20 @@ describe('AppShell', () => {
     expect(
       screen.getByRole('link', { name: /account/i }),
     ).toHaveAttribute('aria-current', 'page')
-    expect(NAV_ITEMS.map((item) => item.to)).toEqual(['/account'])
+    // Marketplace accounts never see clinical navigation (scenario C hygiene).
+    expect(NAV_ITEMS.map((item) => item.to)).toEqual([
+      '/dashboard',
+      '/logbook',
+      '/training',
+      '/notifications',
+      '/marketplace',
+      '/reports',
+      '/supplier',
+      '/institution',
+      '/admin',
+      '/account',
+    ])
+    expect(screen.queryByRole('link', { name: /logbook/i })).not.toBeInTheDocument()
   })
 
   it('signs out and returns to the login page', async () => {

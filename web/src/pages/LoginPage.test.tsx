@@ -81,7 +81,7 @@ describe('LoginPage', () => {
         access: 'access-1',
         refresh: 'refresh-1',
         user: {
-          id: 1,
+          id: 'user-1',
           email: 'buyer.demo@example.test',
           first_name: 'Demo',
           last_name: 'Buyer',

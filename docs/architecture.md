@@ -314,4 +314,19 @@ Rules enforced in `apps/logbook/services.py`:
   reports (`supplier_sales`, `buyer_orders`, `marketplace_summary`) on the
   existing CSV/PDF engine with a nullable `ReportJob.institution` — 47 new
   tests (312 total). Milestone 5 complete.
-- **M6–M7:** per README milestones.
+- **M6 (in progress):** React 19 + Vite + TypeScript web client (`web/`) with
+  TanStack Query for server state and React Router for navigation. Implemented
+  workspaces: authentication and account security, role-aware dashboard,
+  surgical logbook (list/create/detail with inline draft editing, attachments,
+  dictation, participants, review history), training (placements list/detail/
+  create, competency catalog and rubric history, assessments list/create/
+  detail), reports, marketplace (catalog, product detail, cart/checkout, orders
+  with sandbox payment, shipping, refund and dispute actions), notifications,
+  institution administration (profile, departments, members/roles,
+  invitations, audit), supplier workspace (profile/verification, catalog,
+  inventory restock, orders) and platform administration (supplier
+  verification, product moderation, categories, disputes, audit).
+  Navigation items are role-filtered and each workspace repeats the check so a
+  direct URL cannot bypass the UI gate; the API remains the authority.
+  **Outstanding:** the Flutter mobile client.
+- **M7:** per README milestones.

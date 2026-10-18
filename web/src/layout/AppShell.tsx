@@ -4,6 +4,8 @@ import { useAuth } from '../auth/context'
 import { Button } from '../components/Button'
 import { initialsOf, roleLabel } from '../lib/roles'
 import { NAV_ITEMS, filterNavItems } from './nav'
+import { useQuery } from '@tanstack/react-query'
+import { apiFetch } from '../lib/api'
 
 export function AppShell() {
   const { user, logout, hasAnyRole } = useAuth()
@@ -19,11 +21,20 @@ export function AppShell() {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [menuOpen])
 
+  const unreadQuery = useQuery({
+    queryKey: ['shell-notifications-unread'],
+    queryFn: () => apiFetch<{ count: number }>('/notifications/unread-count/'),
+    retry: false,
+    enabled: Boolean(user),
+  })
+
   if (!user) return null
 
   const items = filterNavItems(NAV_ITEMS, hasAnyRole)
   const primaryRole = user.roles.find((assignment) => assignment.is_active)
   const roleDescription = primaryRole ? roleLabel(primaryRole.role) : 'Signed in'
+
+  const unreadCount = unreadQuery.data?.count ?? 0
 
   async function onLogout(): Promise<void> {
     await logout()
@@ -48,6 +59,14 @@ export function AppShell() {
           <span className="brand__text">STAR</span>
         </span>
         <span className="app-topbar__spacer" />
+        <button
+          type="button"
+          className="nav-toggle bell"
+          aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
+          onClick={() => navigate('/notifications', { replace: true })}
+        >
+          🔔{unreadCount > 0 && <span className="bell__count">{unreadCount}</span>}
+        </button>
         <div className="app-topbar__user">
           <span className="user-chip">
             <span className="user-chip__avatar" aria-hidden="true">

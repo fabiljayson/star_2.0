@@ -9,7 +9,7 @@ import { jsonResponse, stubFetch } from '../test/helpers'
 
 function makeUser(role: string): User {
   return {
-    id: 2,
+    id: 'user-2',
     email: 'someone@example.test',
     first_name: 'Some',
     last_name: 'One',
@@ -19,7 +19,7 @@ function makeUser(role: string): User {
     mfa_enabled: false,
     roles: [
       {
-        id: 1,
+        id: 'role-1',
         role,
         institution: null,
         institution_name: null,
