@@ -8,6 +8,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import TimeStampedModel, UUIDModel
+from apps.logbook.uploads import private_storage
 
 # Monetary amounts are whole francs (XOF has no minor unit).
 MONEY_MAX_DIGITS = 12
@@ -269,6 +270,7 @@ class Order(UUIDModel, TimeStampedModel):
     shipping_address = models.TextField(blank=True)
     shipping_phone = models.CharField(max_length=40, blank=True)
     placed_at = models.DateTimeField(default=timezone.now)
+    paid_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancel_reason = models.CharField(max_length=255, blank=True)
 
@@ -309,3 +311,240 @@ class OrderItem(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.quantity} × {self.product_name}"
+
+
+# ── Payments (sandbox provider) ────────────────────────────────────────
+class PaymentStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    SUCCEEDED = "succeeded", "Succeeded"
+    FAILED = "failed", "Failed"
+    CANCELLED = "cancelled", "Cancelled"
+    REFUNDED = "refunded", "Refunded"
+
+
+class Payment(UUIDModel, TimeStampedModel):
+    """One payment attempt for an order; webhook outcomes are verified server-side."""
+
+    order = models.ForeignKey(
+        Order, on_delete=models.PROTECT, related_name="payments"
+    )
+    provider = models.CharField(max_length=32, default="sandbox")
+    status = models.CharField(
+        max_length=16,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PENDING,
+        db_index=True,
+    )
+    amount = models.DecimalField(max_digits=MONEY_MAX_DIGITS, decimal_places=0)
+    currency = models.CharField(max_length=3, choices=CURRENCIES, default="XOF")
+    idempotency_key = models.CharField(max_length=64, blank=True, default="")
+    provider_reference = models.CharField(
+        max_length=100, unique=True, null=True, blank=True
+    )
+    failure_reason = models.CharField(max_length=255, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "payment"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["idempotency_key"],
+                condition=~models.Q(idempotency_key=""),
+                name="uniq_payment_idempotency_key",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["order", "-created_at"], name="payment_order_time"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.order.reference} · {self.status}"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.status != PaymentStatus.PENDING
+
+
+class PaymentEventType(models.TextChoices):
+    INITIATED = "initiated", "Payment initiated"
+    WEBHOOK_ACCEPTED = "webhook_accepted", "Webhook accepted"
+    WEBHOOK_REJECTED = "webhook_rejected", "Webhook rejected"
+    DUPLICATE_IGNORED = "duplicate_ignored", "Duplicate webhook ignored"
+    SUCCEEDED = "succeeded", "Payment succeeded"
+    FAILED = "failed", "Payment failed"
+    EXPIRED = "expired", "Payment window expired"
+    REFUND_REQUESTED = "refund_requested", "Refund requested"
+    REFUND_COMPLETED = "refund_completed", "Refund completed"
+    REFUND_REJECTED = "refund_rejected", "Refund rejected"
+
+
+class PaymentEvent(UUIDModel, TimeStampedModel):
+    """Append-only ledger of everything that happened to a payment."""
+
+    payment = models.ForeignKey(
+        Payment, on_delete=models.CASCADE, related_name="events"
+    )
+    event_type = models.CharField(max_length=24, choices=PaymentEventType.choices)
+    payload = models.JSONField(default=dict, blank=True)
+    signature_valid = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "payment event"
+
+    def __str__(self) -> str:
+        return f"{self.payment.order.reference} · {self.event_type}"
+
+
+# ── Shipping ───────────────────────────────────────────────────────────
+class ShipmentStatus(models.TextChoices):
+    SHIPPED = "shipped", "Shipped"
+    DELIVERED = "delivered", "Delivered"
+
+
+class Shipment(UUIDModel, TimeStampedModel):
+    order = models.OneToOneField(
+        Order, on_delete=models.PROTECT, related_name="shipment"
+    )
+    status = models.CharField(
+        max_length=16, choices=ShipmentStatus.choices, default=ShipmentStatus.SHIPPED
+    )
+    tracking_number = models.CharField(max_length=100, blank=True)
+    shipped_at = models.DateTimeField(default=timezone.now)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    shipped_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="shipments_sent",
+    )
+
+    class Meta:
+        ordering = ["-shipped_at"]
+        verbose_name = "shipment"
+
+    def __str__(self) -> str:
+        return f"{self.order.reference} · {self.status}"
+
+
+# ── Refunds ────────────────────────────────────────────────────────────
+class RefundStatus(models.TextChoices):
+    PENDING = "pending", "Pending supplier decision"
+    REJECTED = "rejected", "Rejected"
+    COMPLETED = "completed", "Completed"
+
+
+class Refund(UUIDModel, TimeStampedModel):
+    """Buyer-requested refund; the supplier decides, completion settles the payment."""
+
+    order = models.ForeignKey(
+        Order, on_delete=models.PROTECT, related_name="refunds"
+    )
+    payment = models.ForeignKey(
+        Payment, on_delete=models.PROTECT, related_name="refunds"
+    )
+    status = models.CharField(
+        max_length=16, choices=RefundStatus.choices, default=RefundStatus.PENDING,
+        db_index=True,
+    )
+    amount = models.DecimalField(max_digits=MONEY_MAX_DIGITS, decimal_places=0)
+    currency = models.CharField(max_length=3, choices=CURRENCIES, default="XOF")
+    reason = models.TextField(blank=True)
+    decision_reason = models.CharField(max_length=255, blank=True)
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="refunds_requested",
+    )
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="refunds_decided",
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "refund"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order"],
+                condition=models.Q(status="pending"),
+                name="uniq_pending_refund_per_order",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.order.reference} · {self.status}"
+
+
+# ── Disputes ───────────────────────────────────────────────────────────
+class DisputeStatus(models.TextChoices):
+    OPEN = "open", "Open"
+    RESOLVED = "resolved", "Resolved"
+
+
+class DisputeResolution(models.TextChoices):
+    BUYER_FAVORED = "buyer_favored", "Resolved for the buyer"
+    SUPPLIER_FAVORED = "supplier_favored", "Resolved for the supplier"
+
+
+class Dispute(UUIDModel, TimeStampedModel):
+    """One dispute per order, with text/file evidence from both parties."""
+
+    order = models.OneToOneField(
+        Order, on_delete=models.PROTECT, related_name="dispute"
+    )
+    opened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="disputes_opened",
+    )
+    status = models.CharField(
+        max_length=16, choices=DisputeStatus.choices, default=DisputeStatus.OPEN,
+        db_index=True,
+    )
+    description = models.TextField()
+    resolution = models.CharField(
+        max_length=24, choices=DisputeResolution.choices, blank=True
+    )
+    resolution_note = models.TextField(blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="disputes_resolved",
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "dispute"
+
+    def __str__(self) -> str:
+        return f"{self.order.reference} · {self.status}"
+
+
+class DisputeEvidence(UUIDModel, TimeStampedModel):
+    dispute = models.ForeignKey(
+        Dispute, on_delete=models.CASCADE, related_name="evidence_entries"
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="dispute_evidence",
+    )
+    body = models.TextField(blank=True)
+    file = models.FileField(
+        upload_to="disputes/%Y/%m/", storage=private_storage, blank=True
+    )
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "dispute evidence"
+
+    def __str__(self) -> str:
+        return f"{self.dispute.order.reference} · evidence"

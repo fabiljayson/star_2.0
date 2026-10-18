@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from django.db.models import Count, Q
+from rest_framework.exceptions import ValidationError
 
 from apps.accounts.models import RoleAssignment, User
 from apps.logbook.models import (
@@ -400,6 +401,183 @@ def build_institution_summary(requester: User, parameters: dict, institution):
     return title, headers, rows
 
 
+
+
+
+# ── Marketplace reports (M5b; no institution scope) ────────────────────
+def _marketplace_date_filters(parameters: dict) -> Q:
+    filters = Q()
+    date_from = parameters.get("date_from")
+    date_to = parameters.get("date_to")
+    if date_from:
+        filters &= Q(order__placed_at__gte=date.fromisoformat(str(date_from)))
+    if date_to:
+        next_day = date.fromisoformat(str(date_to)) + timedelta(days=1)
+        filters &= Q(order__placed_at__lt=next_day)
+    return filters
+
+
+def _order_date_filters(parameters: dict) -> Q:
+    filters = Q()
+    date_from = parameters.get("date_from")
+    date_to = parameters.get("date_to")
+    if date_from:
+        filters &= Q(placed_at__gte=date.fromisoformat(str(date_from)))
+    if date_to:
+        next_day = date.fromisoformat(str(date_to)) + timedelta(days=1)
+        filters &= Q(placed_at__lt=next_day)
+    return filters
+
+
+def _resolve_supplier_profile(requester: User, parameters: dict):
+    from apps.marketplace.models import SupplierProfile
+
+    target_supplier = parameters.get("target_supplier")
+    if target_supplier:
+        if not requester.is_platform_admin:
+            raise ValidationError(
+                {"target_supplier": "Only platform administrators may target another supplier."}
+            )
+        profile = SupplierProfile.objects.filter(pk=target_supplier).first()
+        if profile is None:
+            raise ValidationError(
+                {"target_supplier": "No supplier profile with that id."}
+            )
+        return profile
+    profile = SupplierProfile.objects.filter(user=requester).first()
+    if profile is None:
+        raise ValidationError({"parameters": "This report needs a supplier profile."})
+    return profile
+
+
+def build_supplier_sales(requester: User, parameters: dict, institution):
+    from apps.marketplace.models import OrderItem
+
+    profile = _resolve_supplier_profile(requester, parameters)
+    queryset = (
+        OrderItem.objects.filter(order__supplier=profile)
+        .filter(_marketplace_date_filters(parameters))
+        .select_related("order", "order__buyer")
+        .order_by("-order__placed_at")
+    )
+    headers = [
+        "Order",
+        "Placed at",
+        "Buyer",
+        "SKU",
+        "Product",
+        "Qty",
+        "Unit price (XOF)",
+        "Line total (XOF)",
+        "Order status",
+    ]
+    rows = [
+        [
+            item.order.reference,
+            item.order.placed_at.date().isoformat(),
+            item.order.buyer.email,
+            item.product_sku,
+            item.product_name,
+            item.quantity,
+            str(item.unit_price),
+            str(item.line_total),
+            item.order.get_status_display(),
+        ]
+        for item in queryset
+    ]
+    title = f"Supplier sales — {profile.company_name}"
+    return title, headers, rows
+
+
+def build_buyer_orders(requester: User, parameters: dict, institution):
+    from apps.marketplace.models import Order
+
+    queryset = (
+        Order.objects.filter(buyer=requester)
+        .filter(_order_date_filters(parameters))
+        .prefetch_related("items")
+        .order_by("-placed_at")
+    )
+    headers = [
+        "Order",
+        "Placed at",
+        "Supplier",
+        "Items",
+        "Total (XOF)",
+        "Status",
+    ]
+    rows = [
+        [
+            order.reference,
+            order.placed_at.date().isoformat(),
+            order.supplier.company_name,
+            sum(item.quantity for item in order.items.all()),
+            str(order.total),
+            order.get_status_display(),
+        ]
+        for order in queryset
+    ]
+    title = f"My orders — {requester.email}"
+    return title, headers, rows
+
+
+def build_marketplace_summary(requester: User, parameters: dict, institution):
+    from django.db.models import Sum
+
+    from apps.marketplace.models import Dispute, DisputeStatus, Order, OrderStatus
+
+    if not requester.is_platform_admin:
+        raise ValidationError(
+            {"detail": "Only platform administrators can request this report."}
+        )
+    paid_statuses = [
+        OrderStatus.PAID,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED,
+    ]
+    aggregated = {
+        row["supplier_id"]: row
+        for row in Order.objects.values("supplier_id", "supplier__company_name")
+        .annotate(
+            orders=Count("id"),
+            paid_orders=Count("id", filter=Q(status__in=paid_statuses)),
+            revenue=Sum(
+                "total", filter=Q(status__in=paid_statuses)
+            ),
+            refunds=Count("id", filter=Q(status=OrderStatus.REFUNDED)),
+        )
+    }
+    open_disputes = {
+        row["order__supplier_id"]: row["count"]
+        for row in Dispute.objects.filter(status=DisputeStatus.OPEN)
+        .values("order__supplier_id")
+        .annotate(count=Count("id"))
+    }
+    headers = [
+        "Supplier",
+        "Orders",
+        "Paid orders",
+        "Revenue (XOF)",
+        "Refunded orders",
+        "Open disputes",
+    ]
+    rows = [
+        [
+            data["supplier__company_name"],
+            data["orders"],
+            data["paid_orders"],
+            str(data["revenue"] or 0),
+            data["refunds"],
+            open_disputes.get(supplier_id, 0),
+        ]
+        for supplier_id, data in sorted(
+            aggregated.items(), key=lambda pair: str(pair[1]["supplier__company_name"])
+        )
+    ]
+    title = "Marketplace sales summary"
+    return title, headers, rows
+
+
 BUILDERS = {
     ReportType.INDIVIDUAL_LOGBOOK: build_individual_logbook,
     ReportType.ACTIVITY_BY_DATE: build_activity_by_date,
@@ -410,10 +588,12 @@ BUILDERS = {
     ReportType.EXAMINER_REVIEWS: build_examiner_reviews,
     ReportType.PLACEMENT_COMPLETION: build_placement_completion,
     ReportType.INSTITUTION_SUMMARY: build_institution_summary,
+    ReportType.SUPPLIER_SALES: build_supplier_sales,
+    ReportType.BUYER_ORDERS: build_buyer_orders,
+    ReportType.MARKETPLACE_SUMMARY: build_marketplace_summary,
 }
 
 
 def build_report(report_type: str, requester: User, parameters: dict, institution):
     builder = BUILDERS[report_type]
     return builder(requester, parameters, institution)
-

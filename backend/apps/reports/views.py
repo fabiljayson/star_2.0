@@ -31,7 +31,7 @@ class ReportListCreateView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         job = services.request_report(
             request.user,
-            institution=serializer.validated_data["institution"],
+            institution=serializer.validated_data.get("institution"),
             report_type=serializer.validated_data["report_type"],
             report_format=serializer.validated_data["format"],
             parameters=serializer.validated_data.get("parameters", {}),

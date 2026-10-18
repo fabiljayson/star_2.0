@@ -6,7 +6,7 @@ import pytest
 from rest_framework import status
 
 from apps.accounts.models import RoleAssignment, UserRole
-from apps.accounts.tests.factories import PlatformAdminFactory, UserFactory
+from apps.accounts.tests.factories import UserFactory
 from apps.marketplace import services
 from apps.marketplace.models import (
     InventoryMovement,
@@ -16,51 +16,6 @@ from apps.marketplace.models import (
     ProductCategory,
     SupplierProfile,
 )
-
-
-@pytest.fixture
-def supplier_user(db):
-    user = UserFactory()
-    RoleAssignment.objects.create(user=user, role=UserRole.SUPPLIER)
-    return user
-
-
-@pytest.fixture
-def buyer_user(db):
-    user = UserFactory()
-    RoleAssignment.objects.create(user=user, role=UserRole.BUYER)
-    return user
-
-
-@pytest.fixture
-def platform_admin(db):
-    return PlatformAdminFactory()
-
-
-@pytest.fixture
-def verified_profile(supplier_user, platform_admin):
-    profile = SupplierProfile.objects.create(
-        user=supplier_user, company_name="Acme Surgical", contact_email=supplier_user.email
-    )
-    services.verify_supplier(platform_admin, profile, approve=True)
-    return profile
-
-
-@pytest.fixture
-def sellable_product(verified_profile):
-    category = ProductCategory.objects.create(name="Forceps", slug="forceps")
-    product = Product.objects.create(
-        supplier=verified_profile,
-        category=category,
-        name="Demo Forceps",
-        description="Test product",
-        sku="TEST-FP-001",
-        unit_price=Decimal("12000"),
-        available_quantity=10,
-        approval_status="approved",
-        is_published=True,
-    )
-    return product
 
 
 @pytest.mark.django_db

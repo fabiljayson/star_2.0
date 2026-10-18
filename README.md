@@ -10,10 +10,11 @@ STAR is a documentation, education and commerce platform. It does **not**
 diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
-> **Status:** Milestones 1–5a delivered (foundations, surgical logbook,
+> **Status:** Milestones 1–5 delivered (foundations, surgical logbook,
 > education, mock transcription, in-app notifications, reports/exports and the
-> marketplace catalog/inventory/orders).
-> Milestone 5b (sandbox payments, shipping, refunds, disputes) is next.
+> full marketplace: catalog, inventory, orders, sandbox payments, shipping,
+> refunds and disputes).
+> Milestone 6 (web interfaces) is next.
 > See [Milestones](#milestones).
 
 ---
@@ -166,6 +167,7 @@ Endpoint groups implemented in Milestone 1:
 | Notifications | `GET /api/v1/notifications/`, `GET .../unread-count/`, `POST .../read/`, `POST .../read-all/`, `GET|PUT|PATCH .../preferences/` |
 | Reports | `GET|POST /api/v1/reports/`, `GET .../{id}/`, `GET .../{id}/download/` (CSV/PDF, links expire) |
 | Marketplace | `GET /api/v1/marketplace/categories/`, `GET .../products/`, `GET|POST|PATCH .../supplier/profile/`, `GET|POST|PATCH|DELETE .../supplier/products/`, `POST .../supplier/products/{id}/restock/`, `GET|POST .../cart/items/`, `POST .../checkout/`, `GET .../orders/`, `POST .../orders/{id}/cancel/` |
+| Payments & fulfillment | `POST .../orders/{id}/pay/` (Idempotency-Key), `POST .../payments/webhook/` (HMAC), `POST .../payments/{id}/simulate/` (admin, sandbox), `POST .../orders/{id}/ship|deliver/`, `POST .../orders/{id}/refund-request/`, `POST .../refunds/{id}/decide/`, `GET|POST .../orders/{id}/dispute/`, `POST .../disputes/{id}/evidence|resolve/`, `GET .../disputes/{id}/evidence/{eid}/download/` |
 | Ops | `GET /api/v1/health/`, `/schema/`, `/docs/` |
 
 ---
@@ -194,6 +196,13 @@ institutions or patient data are ever included.
   run — store it safely; it is shown only once.
 
 Never seed demo data into a production environment.
+
+The seed also creates a verified demo supplier (`supplier.demo@example.test`,
+company "Demo Surgical Supplies") with an approved marketplace product.
+
+Periodic task: run `uv run python manage.py expire_marketplace_orders` (e.g.
+hourly via cron) to cancel orders whose payment window
+(`PAYMENT_PENDING_TTL_HOURS`, default 24 h) elapsed and release their stock.
 
 ---
 
@@ -226,8 +235,7 @@ star/
 | 2 | Surgical logbook: records, participants, lifecycle, attachments | **done** |
 | 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **done** (203 tests) |
 | 4 | Reports and exports (PDF/CSV) | **done** (9 report types, 245 tests) |
-| 5a | Marketplace: suppliers, catalog, inventory, cart, orders | **done** (265 tests) |
-| 5b | Sandbox payments, shipping, refunds, disputes | planned |
+| 5 | Marketplace: suppliers, catalog, inventory, orders, sandbox payments, shipping, refunds, disputes, marketplace reports | **done** (312 tests) |
 | 6 | Complete web (and mobile) interfaces | planned |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | planned |
 

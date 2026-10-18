@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import exceptions
 
@@ -11,13 +11,23 @@ from apps.core.models import AuditEvent
 from .models import (
     Cart,
     CartItem,
+    Dispute,
+    DisputeEvidence,
+    DisputeResolution,
+    DisputeStatus,
     InventoryMovement,
     InventoryMovementReason,
     Order,
     OrderItem,
     OrderStatus,
+    PaymentEventType,
+    PaymentStatus,
     Product,
     ProductApprovalStatus,
+    Refund,
+    RefundStatus,
+    Shipment,
+    ShipmentStatus,
     SupplierProfile,
     SupplierVerificationStatus,
 )
@@ -275,6 +285,23 @@ def remove_cart_item(user, item: CartItem) -> None:
 
 
 # ── Checkout & orders ──────────────────────────────────────────────────
+def release_stock(order: Order, *, actor) -> None:
+    """Give reserved units back to available stock (no status change)."""
+    for item in order.items.select_related("product"):
+        if item.product is None:
+            continue
+        product = Product.objects.select_for_update().get(pk=item.product.pk)
+        product.reserved_quantity = max(product.reserved_quantity - item.quantity, 0)
+        product.save(update_fields=["reserved_quantity", "updated_at"])
+        InventoryMovement.objects.create(
+            product=product,
+            delta=-item.quantity,
+            reason=InventoryMovementReason.RELEASED,
+            order=order,
+            actor=actor,
+        )
+
+
 @transaction.atomic
 def checkout(user, *, shipping: dict, request=None) -> list[Order]:
     """Reserve stock and create one order per supplier; prices are snapshotted."""
@@ -366,19 +393,7 @@ def cancel_order(order: Order, *, actor, reason: str = "", request=None) -> Orde
     order.cancelled_at = timezone.now()
     order.cancel_reason = reason[:255]
     order.save(update_fields=["status", "cancelled_at", "cancel_reason", "updated_at"])
-    for item in order.items.select_related("product"):
-        if item.product is None:
-            continue
-        product = Product.objects.select_for_update().get(pk=item.product.pk)
-        product.reserved_quantity = max(product.reserved_quantity - item.quantity, 0)
-        product.save(update_fields=["reserved_quantity", "updated_at"])
-        InventoryMovement.objects.create(
-            product=product,
-            delta=-item.quantity,
-            reason=InventoryMovementReason.RELEASED,
-            order=order,
-            actor=actor,
-        )
+    release_stock(order, actor=actor)
     record_audit(
         request=request,
         actor=actor,
@@ -393,7 +408,265 @@ def cancel_order(order: Order, *, actor, reason: str = "", request=None) -> Orde
 def visible_orders(user):
     if not user or not user.is_authenticated or not user.is_active:
         return Order.objects.none()
+    if user.is_platform_admin:
+        return Order.objects.all()
     profile = get_supplier_profile(user)
     if profile is not None:
         return Order.objects.filter(buyer=user) | Order.objects.filter(supplier=profile)
     return Order.objects.filter(buyer=user)
+
+
+# ── Shipping ───────────────────────────────────────────────────────────
+def ship_order(order: Order, *, actor, tracking_number: str = "", request=None):
+    profile = require_supplier(actor)
+    if order.supplier_id != profile.pk:
+        raise exceptions.NotFound()
+    if order.status != OrderStatus.PAID:
+        raise exceptions.ValidationError(
+            {"status": "Only a paid order can be shipped."}
+        )
+    shipment = Shipment.objects.create(
+        order=order,
+        tracking_number=tracking_number[:100],
+        shipped_by=actor,
+    )
+    order.status = OrderStatus.SHIPPED
+    order.save(update_fields=["status", "updated_at"])
+    record_audit(
+        request=request,
+        actor=actor,
+        action=AuditEvent.Action.SHIPMENT_SHIPPED,
+        object_type="order",
+        object_pk=order.pk,
+        metadata={
+            "reference": order.reference,
+            "tracking_provided": bool(tracking_number.strip()),
+        },
+    )
+    return shipment
+
+
+def deliver_order(order: Order, *, actor, request=None):
+    profile = require_supplier(actor)
+    if order.supplier_id != profile.pk:
+        raise exceptions.NotFound()
+    shipment = Shipment.objects.filter(order=order).first()
+    if shipment is None or shipment.status != ShipmentStatus.SHIPPED:
+        raise exceptions.ValidationError(
+            {"status": "Only a shipped order can be marked as delivered."}
+        )
+    shipment.status = ShipmentStatus.DELIVERED
+    shipment.delivered_at = timezone.now()
+    shipment.save(update_fields=["status", "delivered_at", "updated_at"])
+    order.status = OrderStatus.DELIVERED
+    order.save(update_fields=["status", "updated_at"])
+    record_audit(
+        request=request,
+        actor=actor,
+        action=AuditEvent.Action.SHIPMENT_DELIVERED,
+        object_type="order",
+        object_pk=order.pk,
+        metadata={"reference": order.reference},
+    )
+    return shipment
+
+
+# ── Refunds ────────────────────────────────────────────────────────────
+REFUNDABLE_STATUSES = frozenset(
+    {OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED}
+)
+
+
+def request_refund(order: Order, *, buyer, reason: str = "", request=None) -> Refund:
+    from .payments import log_payment_event
+
+    require_buyer(buyer)
+    if order.buyer_id != buyer.pk:
+        raise exceptions.NotFound()
+    if order.status not in REFUNDABLE_STATUSES:
+        raise exceptions.ValidationError(
+            {"status": f"An order in status '{order.status}' cannot be refunded."}
+        )
+    payment = order.payments.filter(status=PaymentStatus.SUCCEEDED).first()
+    if payment is None:
+        raise exceptions.ValidationError(
+            {"payment": "No settled payment exists for this order."}
+        )
+    try:
+        refund = Refund.objects.create(
+            order=order,
+            payment=payment,
+            amount=payment.amount,
+            currency=payment.currency,
+            reason=reason[:4000],
+            requested_by=buyer,
+        )
+    except IntegrityError:
+        raise exceptions.ValidationError(
+            {"refund": "A refund request is already pending for this order."}
+        ) from None
+    log_payment_event(
+        payment, PaymentEventType.REFUND_REQUESTED, payload={"refund_id": str(refund.pk)}
+    )
+    record_audit(
+        request=request,
+        actor=buyer,
+        action=AuditEvent.Action.REFUND_REQUESTED,
+        object_type="refund",
+        object_pk=refund.pk,
+        metadata={"reference": order.reference, "reason_provided": bool(reason.strip())},
+    )
+    return refund
+
+
+def decide_refund(
+    refund: Refund, *, actor, approved: bool, decision_reason: str = "", request=None
+) -> Refund:
+    from .payments import log_payment_event, settle_refund
+
+    if not has_role(actor, UserRole.SUPPLIER):
+        raise exceptions.PermissionDenied(
+            "Only the supplier can decide refunds.", code="permission_denied"
+        )
+    profile = get_supplier_profile(actor)
+    if profile is None or refund.order.supplier_id != profile.pk:
+        raise exceptions.NotFound()
+    if refund.status != RefundStatus.PENDING:
+        raise exceptions.ValidationError(
+            {"status": "This refund request has already been decided."}
+        )
+    refund.decided_by = actor
+    refund.decided_at = timezone.now()
+    refund.decision_reason = decision_reason[:255]
+    if not approved:
+        refund.status = RefundStatus.REJECTED
+        refund.save()
+        log_payment_event(
+            refund.payment,
+            PaymentEventType.REFUND_REJECTED,
+            payload={"refund_id": str(refund.pk)},
+        )
+        record_audit(
+            request=request,
+            actor=actor,
+            action=AuditEvent.Action.REFUND_REJECTED,
+            object_type="refund",
+            object_pk=refund.pk,
+            metadata={"reference": refund.order.reference},
+        )
+        return refund
+    refund.status = RefundStatus.COMPLETED
+    refund.save()
+    settle_refund(refund, actor=actor, request=request)
+    return refund
+
+
+# ── Disputes ───────────────────────────────────────────────────────────
+DISPUTABLE_STATUSES = REFUNDABLE_STATUSES
+
+
+def is_order_party(user, order) -> bool:
+    if not user or not user.is_authenticated:
+        return False
+    if order.buyer_id == user.pk:
+        return True
+    return order.supplier.user_id == user.pk
+
+
+def open_dispute(order: Order, *, user, description: str, request=None) -> Dispute:
+    if not description.strip():
+        raise exceptions.ValidationError(
+            {"description": "Describe the problem before opening a dispute."}
+        )
+    if not is_order_party(user, order):
+        raise exceptions.NotFound()
+    if order.status not in DISPUTABLE_STATUSES:
+        raise exceptions.ValidationError(
+            {"status": f"An order in status '{order.status}' cannot be disputed."}
+        )
+    if Dispute.objects.filter(order=order).exists():
+        raise exceptions.ValidationError(
+            {"dispute": "A dispute already exists for this order."}
+        )
+    dispute = Dispute.objects.create(
+        order=order, opened_by=user, description=description
+    )
+    record_audit(
+        request=request,
+        actor=user,
+        action=AuditEvent.Action.DISPUTE_OPENED,
+        object_type="dispute",
+        object_pk=dispute.pk,
+        metadata={"reference": order.reference},
+    )
+    return dispute
+
+
+def add_dispute_evidence(
+    dispute: Dispute, *, user, body: str, file=None, request=None
+) -> DisputeEvidence:
+    if not is_order_party(user, dispute.order):
+        raise exceptions.NotFound()
+    if dispute.status != DisputeStatus.OPEN:
+        raise exceptions.ValidationError(
+            {"dispute": "Evidence can only be added while the dispute is open."}
+        )
+    if not body.strip() and file is None:
+        raise exceptions.ValidationError(
+            {"evidence": "Provide a description, a file, or both."}
+        )
+    evidence = DisputeEvidence.objects.create(
+        dispute=dispute, author=user, body=body, file=file or ""
+    )
+    record_audit(
+        request=request,
+        actor=user,
+        action=AuditEvent.Action.DISPUTE_EVIDENCE_ADDED,
+        object_type="dispute",
+        object_pk=dispute.pk,
+        metadata={"reference": dispute.order.reference, "has_file": bool(file)},
+    )
+    return evidence
+
+
+def resolve_dispute(
+    dispute: Dispute,
+    *,
+    actor,
+    resolution: str,
+    note: str = "",
+    request=None,
+) -> Dispute:
+    from .payments import refund_for_dispute
+
+    if not is_platform_admin(actor):
+        raise exceptions.PermissionDenied(
+            "Only platform administrators resolve disputes.",
+            code="permission_denied",
+        )
+    if dispute.status != DisputeStatus.OPEN:
+        raise exceptions.ValidationError(
+            {"status": "This dispute has already been resolved."}
+        )
+    if resolution not in DisputeResolution.values:
+        raise exceptions.ValidationError(
+            {"resolution": "Expected 'buyer_favored' or 'supplier_favored'."}
+        )
+    dispute.status = DisputeStatus.RESOLVED
+    dispute.resolution = resolution
+    dispute.resolution_note = note[:4000]
+    dispute.resolved_by = actor
+    dispute.resolved_at = timezone.now()
+    dispute.save()
+    if resolution == DisputeResolution.BUYER_FAVORED:
+        refund_for_dispute(dispute, actor=actor, request=request)
+    record_audit(
+        request=request,
+        actor=actor,
+        action=AuditEvent.Action.DISPUTE_RESOLVED,
+        object_type="dispute",
+        object_pk=dispute.pk,
+        metadata={"reference": dispute.order.reference, "resolution": resolution},
+    )
+    return dispute
+

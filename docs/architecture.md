@@ -182,9 +182,30 @@ Rules enforced in `apps/logbook/services.py`:
   unit price, quantity), reserves stock, and clears the cart. Price or
   availability races surface as a 400 with per-item details.
 - **Orders:** unique reference `ORD-YYYY-XXXXXX`, status machine
-  (`pending_payment` → … with `cancelled` release), cancellation by buyer
-  or platform admin releases reservations and logs movements; supplier
-  sees its orders, buyer sees its own.
+  (`pending_payment` → `paid` → `shipped` → `delivered`, plus `cancelled`
+  and `refunded`), cancellation by buyer or platform admin releases
+  reservations and logs movements; supplier sees its orders, buyer sees its
+  own.
+- **Sandbox payments (M5b):** `Payment` (one attempt per window; idempotency
+  keys, amount/currency snapshots) + append-only `PaymentEvent` ledger. The
+  **only** way money moves is a webhook signed with HMAC-SHA256 over the
+  canonical JSON body (`PAYMENT_WEBHOOK_SECRET`, header
+  `X-Payment-Signature`, constant-time compare); browser redirects and
+  client-submitted statuses are never trusted. The sandbox `simulate`
+  endpoint builds a real signed webhook and feeds the same handler, and only
+  exists when `PAYMENTS_ACCEPT_MOCK` is true (forced `False` in
+  `production.py`). Success consumes reservations into `sold` movements;
+  refunds restock; pending windows auto-cancel via
+  `expire_marketplace_orders` (TTL `PAYMENT_PENDING_TTL_HOURS`, default 24 h)
+  which releases stock. Event payloads are redacted (no card/CVC keys) and
+  full card data is never accepted or stored.
+- **Fulfillment:** `Shipment` (shipped → delivered with tracking number,
+  supplier-only), full-order `Refund` (buyer requests on a settled payment,
+  supplier decides once; approval settles payment+order as refunded and
+  restocks), `Dispute` (one per order, either party, text + file evidence in
+  private storage with an authenticated download link; platform admin
+  resolves — `buyer_favored` triggers the refund automatically,
+  `supplier_favored` keeps the payment).
 - **Isolation:** supplier/buyer roles have no clinical access
   (`MARKETPLACE_ONLY_ROLES` in `apps/logbook/services.py`).
 
@@ -281,4 +302,16 @@ Rules enforced in `apps/logbook/services.py`:
   buyer/supplier scoping and cancellation that releases reservations and
   logs the release; audit events `marketplace.*` — 20 new tests
   (265 total).
-- **M5b–M7:** per README milestones.
+- **M5b (done):** sandbox payment settlement and the rest of the marketplace
+  lifecycle — `Payment`/`PaymentEvent` with HMAC-verified webhooks
+  (idempotent, amount+currency matched, mock refused when
+  `PAYMENTS_ACCEPT_MOCK=False`, payloads redacted), 24 h payment-window
+  expiry command that releases stock, stock consumption on settlement
+  (`sold`) and restock on refund, `Shipment` (ship/deliver), full-order
+  refunds (buyer requests, supplier decides, state + inventory settled once),
+  disputes with private-storage evidence + authenticated download and
+  platform-admin resolution (buyer-favored auto-refunds), marketplace
+  reports (`supplier_sales`, `buyer_orders`, `marketplace_summary`) on the
+  existing CSV/PDF engine with a nullable `ReportJob.institution` — 47 new
+  tests (312 total). Milestone 5 complete.
+- **M6–M7:** per README milestones.

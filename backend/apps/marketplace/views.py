@@ -1,19 +1,45 @@
 from __future__ import annotations
 
+import json
+import mimetypes
+
 from django.db.models import Q
+from django.http import FileResponse
 from rest_framework import exceptions, generics, status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import services
-from .models import CartItem, Product, ProductCategory, SupplierProfile
+from apps.accounts.models import UserRole
+
+from . import payments, services
+from .models import (
+    CartItem,
+    Dispute,
+    Payment,
+    Product,
+    ProductCategory,
+    Refund,
+    SupplierProfile,
+)
 from .serializers import (
     CartItemCreateSerializer,
     CartItemSerializer,
     CheckoutSerializer,
+    DisputeCreateSerializer,
+    DisputeEvidenceSerializer,
+    DisputeResolveSerializer,
+    DisputeSerializer,
     OrderSerializer,
+    PaymentSerializer,
     ProductCategorySerializer,
     ProductSerializer,
+    RefundDecideSerializer,
+    RefundRequestSerializer,
+    RefundSerializer,
+    ShipmentSerializer,
+    ShipSerializer,
+    SimulatePaymentSerializer,
     SupplierProfileSerializer,
 )
 
@@ -305,3 +331,285 @@ class OrderCancelView(APIView):
             request=request,
         )
         return Response(OrderSerializer(order).data)
+
+
+# ── Payments (M5b) ─────────────────────────────────────────────────────
+class OrderPayView(APIView):
+    def post(self, request, pk):
+        order = services.visible_orders(request.user).filter(pk=pk).first()
+        if order is None:
+            raise exceptions.NotFound()
+        if order.buyer_id != request.user.pk:
+            raise exceptions.PermissionDenied(
+                "Only the buyer can pay for this order.", code="permission_denied"
+            )
+        idempotency_key = request.headers.get("Idempotency-Key", "") or str(
+            request.data.get("idempotency_key", "")
+        )
+        payment, created = payments.initiate_payment(
+            order,
+            buyer=request.user,
+            idempotency_key=idempotency_key,
+            request=request,
+        )
+        return Response(
+            PaymentSerializer(payment).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class PaymentDetailView(APIView):
+    def get(self, request, pk):
+        if services.is_platform_admin(request.user):
+            payment = Payment.objects.filter(pk=pk).first()
+        else:
+            payment = (
+                Payment.objects.filter(pk=pk)
+                .filter(
+                    Q(order__buyer=request.user)
+                    | Q(order__supplier__user=request.user)
+                )
+                .first()
+            )
+        if payment is None:
+            raise exceptions.NotFound()
+        return Response(PaymentSerializer(payment).data)
+
+
+class PaymentSimulateView(APIView):
+    """Sandbox provider stand-in: delivers a signed webhook to the real handler."""
+
+    def post(self, request, pk):
+        if not services.is_platform_admin(request.user):
+            raise exceptions.PermissionDenied(
+                "Only platform administrators trigger sandbox outcomes.",
+                code="permission_denied",
+            )
+        payment = Payment.objects.filter(pk=pk).first()
+        if payment is None:
+            raise exceptions.NotFound()
+        serializer = SimulatePaymentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            payment = payments.simulate_payment(
+                payment,
+                outcome=serializer.validated_data["outcome"],
+                request=request,
+            )
+        except exceptions.ValidationError:
+            raise
+        return Response(PaymentSerializer(payment).data)
+
+
+class PaymentWebhookView(APIView):
+    """Provider callback; signature over the canonical JSON body decides truth."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            raise exceptions.ValidationError(
+                {"payload": "Expected a JSON object."}
+            ) from None
+        signature = request.headers.get(payments.WEBHOOK_SIGNATURE_HEADER, "")
+        payment = payments.apply_webhook(payload, signature, request=request)
+        return Response(
+            {"payment": str(payment.pk), "status": payment.status}
+        )
+
+
+# ── Shipping (M5b) ─────────────────────────────────────────────────────
+class OrderShipView(APIView):
+    def post(self, request, pk):
+        order = services.visible_orders(request.user).filter(pk=pk).first()
+        if order is None:
+            raise exceptions.NotFound()
+        serializer = ShipSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        shipment = services.ship_order(
+            order,
+            actor=request.user,
+            tracking_number=serializer.validated_data.get("tracking_number", ""),
+            request=request,
+        )
+        return Response(ShipmentSerializer(shipment).data, status=201)
+
+
+class OrderDeliverView(APIView):
+    def post(self, request, pk):
+        order = services.visible_orders(request.user).filter(pk=pk).first()
+        if order is None:
+            raise exceptions.NotFound()
+        shipment = services.deliver_order(order, actor=request.user, request=request)
+        return Response(ShipmentSerializer(shipment).data)
+
+
+# ── Refunds (M5b) ──────────────────────────────────────────────────────
+class OrderRefundRequestView(APIView):
+    def post(self, request, pk):
+        order = services.visible_orders(request.user).filter(pk=pk).first()
+        if order is None:
+            raise exceptions.NotFound()
+        serializer = RefundRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refund = services.request_refund(
+            order,
+            buyer=request.user,
+            reason=serializer.validated_data.get("reason", ""),
+            request=request,
+        )
+        return Response(RefundSerializer(refund).data, status=201)
+
+
+class RefundDecideView(APIView):
+    def _refund(self, user, pk):
+        if not services.has_role(user, UserRole.SUPPLIER):
+            raise exceptions.PermissionDenied(
+                "Only the supplier can decide refunds.", code="permission_denied"
+            )
+        refund = Refund.objects.filter(pk=pk).select_related("order").first()
+        if refund is None:
+            raise exceptions.NotFound()
+        profile = services.get_supplier_profile(user)
+        if profile is None or refund.order.supplier_id != profile.pk:
+            raise exceptions.NotFound()
+        return refund
+
+    def post(self, request, pk):
+        refund = self._refund(request.user, pk)
+        serializer = RefundDecideSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refund = services.decide_refund(
+            refund,
+            actor=request.user,
+            approved=serializer.validated_data["approved"],
+            decision_reason=serializer.validated_data.get("reason", ""),
+            request=request,
+        )
+        return Response(RefundSerializer(refund).data)
+
+
+# ── Disputes (M5b) ─────────────────────────────────────────────────────
+class OrderDisputeView(APIView):
+    def get(self, request, pk):
+        order = services.visible_orders(request.user).filter(pk=pk).first()
+        if order is None:
+            raise exceptions.NotFound()
+        dispute = Dispute.objects.filter(order=order).first()
+        if dispute is None:
+            raise exceptions.NotFound()
+        return Response(DisputeSerializer(dispute).data)
+
+    def post(self, request, pk):
+        order = services.visible_orders(request.user).filter(pk=pk).first()
+        if order is None:
+            raise exceptions.NotFound()
+        serializer = DisputeCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dispute = services.open_dispute(
+            order,
+            user=request.user,
+            description=serializer.validated_data["description"],
+            request=request,
+        )
+        return Response(DisputeSerializer(dispute).data, status=201)
+
+
+class DisputeDetailView(APIView):
+    def get(self, request, pk):
+        if services.is_platform_admin(request.user):
+            dispute = Dispute.objects.filter(pk=pk).first()
+        else:
+            dispute = (
+                Dispute.objects.filter(pk=pk)
+                .filter(
+                    Q(order__buyer=request.user)
+                    | Q(order__supplier__user=request.user)
+                )
+                .first()
+            )
+        if dispute is None:
+            raise exceptions.NotFound()
+        return Response(DisputeSerializer(dispute).data)
+
+
+class DisputeEvidenceView(APIView):
+    def post(self, request, pk):
+        dispute = Dispute.objects.filter(pk=pk).first()
+        if dispute is None:
+            raise exceptions.NotFound()
+        serializer = DisputeEvidenceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        evidence = services.add_dispute_evidence(
+            dispute,
+            user=request.user,
+            body=serializer.validated_data.get("body", ""),
+            file=serializer.validated_data.get("file"),
+            request=request,
+        )
+        return Response(DisputeEvidenceSerializer(evidence).data, status=201)
+
+
+class DisputeEvidenceDownloadView(APIView):
+    def get(self, request, pk, evidence_id):
+        dispute = Dispute.objects.filter(pk=pk).first()
+        if dispute is None:
+            raise exceptions.NotFound()
+        if not (
+            services.is_platform_admin(request.user)
+            or services.is_order_party(request.user, dispute.order)
+        ):
+            raise exceptions.NotFound()
+        evidence = dispute.evidence_entries.filter(pk=evidence_id).first()
+        if evidence is None or not evidence.file:
+            raise exceptions.NotFound()
+        if not evidence.file.storage.exists(evidence.file.name):
+            raise exceptions.NotFound("File content is no longer available.")
+        filename = evidence.file.name.rsplit("/", 1)[-1]
+        content_type, _ = mimetypes.guess_type(filename)
+        response = FileResponse(
+            evidence.file.open("rb"),
+            as_attachment=True,
+            filename=filename,
+            content_type=content_type or "application/octet-stream",
+        )
+        response["X-Content-Type-Options"] = "nosniff"
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
+class DisputeResolveView(APIView):
+    def post(self, request, pk):
+        dispute = Dispute.objects.filter(pk=pk).first()
+        if dispute is None:
+            raise exceptions.NotFound()
+        serializer = DisputeResolveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dispute = services.resolve_dispute(
+            dispute,
+            actor=request.user,
+            resolution=serializer.validated_data["resolution"],
+            note=serializer.validated_data.get("note", ""),
+            request=request,
+        )
+        return Response(DisputeSerializer(dispute).data)
+
+
+class DisputeListView(generics.ListAPIView):
+    serializer_class = DisputeSerializer
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        if not services.is_platform_admin(self.request.user):
+            raise exceptions.PermissionDenied(
+                "Only platform administrators list all disputes.",
+                code="permission_denied",
+            )
+        queryset = Dispute.objects.all()
+        open_only = self.request.query_params.get("status")
+        if open_only:
+            queryset = queryset.filter(status=open_only)
+        return queryset

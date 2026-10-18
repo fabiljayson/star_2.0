@@ -59,4 +59,30 @@ urlpatterns = [
         views.OrderCancelView.as_view(),
         name="order-cancel",
     ),
+    path("marketplace/orders/<uuid:pk>/pay/", views.OrderPayView.as_view()),
+    path("marketplace/orders/<uuid:pk>/ship/", views.OrderShipView.as_view()),
+    path("marketplace/orders/<uuid:pk>/deliver/", views.OrderDeliverView.as_view()),
+    path(
+        "marketplace/orders/<uuid:pk>/refund-request/",
+        views.OrderRefundRequestView.as_view(),
+    ),
+    path("marketplace/orders/<uuid:pk>/dispute/", views.OrderDisputeView.as_view()),
+    path("marketplace/payments/<uuid:pk>/", views.PaymentDetailView.as_view()),
+    path("marketplace/payments/<uuid:pk>/simulate/", views.PaymentSimulateView.as_view()),
+    path("marketplace/payments/webhook/", views.PaymentWebhookView.as_view()),
+    path("marketplace/refunds/<uuid:pk>/decide/", views.RefundDecideView.as_view()),
+    path("marketplace/disputes/", views.DisputeListView.as_view()),
+    path("marketplace/disputes/<uuid:pk>/", views.DisputeDetailView.as_view()),
+    path(
+        "marketplace/disputes/<uuid:pk>/evidence/",
+        views.DisputeEvidenceView.as_view(),
+    ),
+    path(
+        "marketplace/disputes/<uuid:pk>/evidence/<uuid:evidence_id>/download/",
+        views.DisputeEvidenceDownloadView.as_view(),
+    ),
+    path(
+        "marketplace/disputes/<uuid:pk>/resolve/",
+        views.DisputeResolveView.as_view(),
+    ),
 ]

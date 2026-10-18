@@ -19,6 +19,9 @@ class ReportType(models.TextChoices):
     EXAMINER_REVIEWS = "examiner_reviews", "Examiner review report"
     PLACEMENT_COMPLETION = "placement_completion", "Placement completion report"
     INSTITUTION_SUMMARY = "institution_summary", "Institution-level aggregated report"
+    SUPPLIER_SALES = "supplier_sales", "Supplier sales report"
+    BUYER_ORDERS = "buyer_orders", "Buyer orders report"
+    MARKETPLACE_SUMMARY = "marketplace_summary", "Marketplace sales summary"
 
 
 class ReportFormat(models.TextChoices):
@@ -58,6 +61,8 @@ class ReportJob(UUIDModel, TimeStampedModel):
         "organizations.Institution",
         on_delete=models.PROTECT,
         related_name="report_jobs",
+        null=True,
+        blank=True,
     )
     report_type = models.CharField(max_length=40, choices=ReportType.choices)
     format = models.CharField(max_length=8, choices=ReportFormat.choices)

@@ -211,6 +211,11 @@ ATTACHMENT_ALLOWED_EXTENSIONS = [
 AUDIO_RETENTION_DAYS = env_int("AUDIO_RETENTION_DAYS", 7)
 PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "sandbox")
 PAYMENT_WEBHOOK_SECRET = os.environ.get("PAYMENT_WEBHOOK_SECRET", "")
+# A payment attempt stays open this long before the order auto-cancels.
+PAYMENT_PENDING_TTL_HOURS = env_int("PAYMENT_PENDING_TTL_HOURS", 24)
+# Sandbox outcomes (mock HMAC webhooks) are only honoured outside production;
+# production.py forces this to False so mock money can never look real.
+PAYMENTS_ACCEPT_MOCK = env_bool("PAYMENTS_ACCEPT_MOCK", True)
 TRANSCRIPTION_PROVIDER = os.environ.get("TRANSCRIPTION_PROVIDER", "mock")
 TRANSCRIPTION_MOCK_FAILURE = env_bool("TRANSCRIPTION_MOCK_FAILURE", False)
 TRANSCRIPTION_LANGUAGES = [

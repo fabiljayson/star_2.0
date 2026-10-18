@@ -45,6 +45,39 @@ PARTICIPATION_REPORT_TYPES = frozenset(
         ReportType.PLACEMENT_COMPLETION,
     }
 )
+# Report types that are marketplace-scoped and need no institution.
+MARKETPLACE_REPORT_TYPES = frozenset(
+    {
+        ReportType.SUPPLIER_SALES,
+        ReportType.BUYER_ORDERS,
+        ReportType.MARKETPLACE_SUMMARY,
+    }
+)
+
+
+def _has_role(user, role) -> bool:
+    return RoleAssignment.objects.filter(
+        user=user, role=role, is_active=True
+    ).exists()
+
+
+def _can_request_marketplace_report(user, report_type, parameters) -> bool:
+    if report_type == ReportType.MARKETPLACE_SUMMARY:
+        return user.is_platform_admin
+    if report_type == ReportType.BUYER_ORDERS:
+        return user.is_platform_admin or _has_role(user, UserRole.BUYER)
+    # SUPPLIER_SALES: the own supplier profile, or any profile for admins.
+    if user.is_platform_admin:
+        return True
+    if not _has_role(user, UserRole.SUPPLIER):
+        return False
+    target_supplier = parameters.get("target_supplier")
+    if target_supplier:
+        from apps.marketplace.services import get_supplier_profile
+
+        profile = get_supplier_profile(user)
+        return profile is not None and str(profile.pk) == str(target_supplier)
+    return True
 
 
 def _is_member(user, institution_id) -> bool:
@@ -53,10 +86,14 @@ def _is_member(user, institution_id) -> bool:
     ).exists()
 
 
-def can_request_report(user, report_type: str, institution_id, target=None) -> bool:
+def can_request_report(
+    user, report_type: str, institution_id, target=None, parameters=None
+) -> bool:
     if not user or not user.is_authenticated or not user.is_active:
         return False
-    if not _is_member(user, institution_id):
+    if report_type in MARKETPLACE_REPORT_TYPES:
+        return _can_request_marketplace_report(user, report_type, parameters or {})
+    if institution_id is None or not _is_member(user, institution_id):
         return False
     if report_type == ReportType.INDIVIDUAL_LOGBOOK:
         if target is None or target.pk == user.pk:
@@ -100,14 +137,26 @@ def request_report(
     parameters: dict,
     request=None,
 ) -> ReportJob:
+    is_marketplace = report_type in MARKETPLACE_REPORT_TYPES
+    if not is_marketplace and institution is None:
+        raise exceptions.ValidationError(
+            {"institution": "This report requires an institution."}
+        )
     target = None
-    if report_type in TARGETED_REPORT_TYPES:
-        target = resolve_target(user, institution.pk, parameters.get("target_user"))
-        parameters = {**parameters, "target_user": str(target.pk)}
-    elif parameters.get("target_user"):
-        target = resolve_target(user, institution.pk, parameters.get("target_user"))
-        parameters = {**parameters, "target_user": str(target.pk)}
-    if not can_request_report(user, report_type, institution.pk, target=target):
+    if not is_marketplace:
+        if report_type in TARGETED_REPORT_TYPES:
+            target = resolve_target(user, institution.pk, parameters.get("target_user"))
+            parameters = {**parameters, "target_user": str(target.pk)}
+        elif parameters.get("target_user"):
+            target = resolve_target(user, institution.pk, parameters.get("target_user"))
+            parameters = {**parameters, "target_user": str(target.pk)}
+    if not can_request_report(
+        user,
+        report_type,
+        institution.pk if institution is not None else None,
+        target=target,
+        parameters=parameters,
+    ):
         raise exceptions.PermissionDenied(
             "You are not allowed to request this report.", code="permission_denied"
         )
@@ -148,8 +197,9 @@ def _generate(job: ReportJob, *, request=None) -> ReportJob:
                     )
                 }
             )
+        scope = job.institution.name if job.institution_id else "Marketplace"
         subtitle = (
-            f"{job.institution.name} · requested by {job.requester.email} · "
+            f"{scope} · requested by {job.requester.email} · "
             f"{timezone.now().date().isoformat()}"
         )
         content, content_type = render_document(

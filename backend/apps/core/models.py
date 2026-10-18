@@ -102,6 +102,18 @@ class AuditEvent(UUIDModel, TimeStampedModel):
         ORDER_CANCELLED = "marketplace.order_cancelled", "Order cancelled"
         INVENTORY_RESERVED = "marketplace.inventory_reserved", "Inventory reserved"
         INVENTORY_RELEASED = "marketplace.inventory_released", "Inventory released"
+        PAYMENT_INITIATED = "marketplace.payment_initiated", "Payment initiated"
+        PAYMENT_SUCCEEDED = "marketplace.payment_succeeded", "Payment succeeded"
+        PAYMENT_FAILED = "marketplace.payment_failed", "Payment failed"
+        PAYMENT_EXPIRED = "marketplace.payment_expired", "Payment window expired"
+        REFUND_REQUESTED = "marketplace.refund_requested", "Refund requested"
+        REFUND_COMPLETED = "marketplace.refund_completed", "Refund completed"
+        REFUND_REJECTED = "marketplace.refund_rejected", "Refund rejected"
+        SHIPMENT_SHIPPED = "marketplace.shipment_shipped", "Order shipped"
+        SHIPMENT_DELIVERED = "marketplace.shipment_delivered", "Order delivered"
+        DISPUTE_OPENED = "marketplace.dispute_opened", "Dispute opened"
+        DISPUTE_EVIDENCE_ADDED = "marketplace.dispute_evidence_added", "Dispute evidence added"
+        DISPUTE_RESOLVED = "marketplace.dispute_resolved", "Dispute resolved"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
