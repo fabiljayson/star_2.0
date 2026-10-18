@@ -224,4 +224,15 @@ Rules enforced in `apps/logbook/services.py`:
   isolation, generic previews that never contain clinical text; triggers wired
   into submission/review, placements, examiner assignments and assessment
   submit/decide. 33 new tests (203 total).
-- **M4–M7:** per README milestones.
+- **M4a (done):** `apps.reports` — `ReportJob` (requester + status + artifact with
+  TTL), 4 logbook reports (individual logbook, activity by date range, activity
+  by specialty and institution, procedures by participation role), CSV (UTF-8
+  BOM, OWASP formula-injection guard) and PDF (WeasyPrint) rendering, synchronous
+  generation with a configurable row limit, expiring download links (410), audit
+  trail (`report.requested/downloaded/failed`), exports reuse the logbook
+  row-level visibility filter so a report can never contain records its requester
+  could not see, and never expose patient reference codes — 23 new tests
+  (226 total).
+- **M4b (planned):** training reports (trainee progress, competency assessments,
+  examiner reviews, placement completion, institution aggregates).
+- **M5–M7:** per README milestones.

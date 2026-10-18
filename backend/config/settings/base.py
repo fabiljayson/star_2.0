@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "apps.logbook",
     "apps.training",
     "apps.notifications",
+    "apps.reports",
 ]
 
 MIDDLEWARE = [
@@ -224,6 +225,10 @@ AUDIO_ALLOWED_EXTENSIONS = [
     ).split(",")
     if ext.strip()
 ]
+
+# ── Reports / exports ──
+REPORT_ARTIFACT_TTL_HOURS = env_int("REPORT_ARTIFACT_TTL_HOURS", 24)
+REPORT_SYNC_ROW_LIMIT = env_int("REPORT_SYNC_ROW_LIMIT", 50000)
 
 
 # ── API documentation ──────────────────────────────────────────────────

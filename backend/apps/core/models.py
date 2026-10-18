@@ -89,6 +89,9 @@ class AuditEvent(UUIDModel, TimeStampedModel):
             "Transcription completed (simulated or real)",
         )
         TRANSCRIPTION_FAILED = "transcription.failed", "Transcription failed"
+        REPORT_REQUESTED = "report.requested", "Report requested"
+        REPORT_DOWNLOADED = "report.downloaded", "Report downloaded"
+        REPORT_FAILED = "report.failed", "Report generation failed"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
