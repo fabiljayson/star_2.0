@@ -1,52 +1,58 @@
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
 import { Spinner } from './components/Spinner'
-import { AccountPage } from './pages/AccountPage'
-import { DashboardPage } from './pages/DashboardPage'
-import { InstitutionAdminPage } from './pages/institution/InstitutionAdminPage'
-import { PlatformAdminPage } from './pages/admin/PlatformAdminPage'
-import { SupplierWorkspacePage } from './pages/supplier/SupplierWorkspacePage'
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
-import { LandingPage } from './pages/LandingPage'
-import { LoginPage } from './pages/LoginPage'
-import { MfaPage } from './pages/MfaPage'
-import { NotFoundPage } from './pages/NotFoundPage'
-import { RegisterPage } from './pages/RegisterPage'
-import { ResetPasswordPage } from './pages/ResetPasswordPage'
-import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { AppShell } from './layout/AppShell'
-import { LogbookListPage } from './pages/logbook/LogbookListPage'
-import { ProcedureCreatePage } from './pages/logbook/ProcedureCreatePage'
-import { ProcedureDetailPage } from './pages/logbook/ProcedureDetailPage'
-import { ReportsPage } from './pages/reports/ReportsPage'
-import { CatalogPage } from './pages/marketplace/CatalogPage'
-import { ProductDetailPage } from './pages/marketplace/ProductDetailPage'
-import { CartPage } from './pages/marketplace/CartPage'
-import { OrdersPage } from './pages/marketplace/OrdersPage'
-import { OrderDetailPage } from './pages/marketplace/OrderDetailPage'
-import { NotificationCenter } from './pages/NotificationCenter'
-import { PlacementListPage } from './pages/training/PlacementListPage'
-import { PlacementCreatePage } from './pages/training/PlacementCreatePage'
-import { PlacementDetailPage } from './pages/training/PlacementDetailPage'
-import { CompetencyCatalogPage } from './pages/training/CompetencyCatalogPage'
-import { CompetencyDetailPage } from './pages/training/CompetencyDetailPage'
-import { AssessmentListPage } from './pages/training/AssessmentListPage'
-import { AssessmentCreatePage } from './pages/training/AssessmentCreatePage'
-import { AssessmentDetailPage } from './pages/training/AssessmentDetailPage'
+import { LandingPage } from './pages/LandingPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+
+// ── Lazy-loaded screens (one chunk per route entry) ──
+const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })))
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const InstitutionAdminPage = lazy(() => import('./pages/institution/InstitutionAdminPage').then((m) => ({ default: m.InstitutionAdminPage })))
+const PlatformAdminPage = lazy(() => import('./pages/admin/PlatformAdminPage').then((m) => ({ default: m.PlatformAdminPage })))
+const SupplierWorkspacePage = lazy(() => import('./pages/supplier/SupplierWorkspacePage').then((m) => ({ default: m.SupplierWorkspacePage })))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })))
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })))
+const MfaPage = lazy(() => import('./pages/MfaPage').then((m) => ({ default: m.MfaPage })))
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage').then((m) => ({ default: m.VerifyEmailPage })))
+const LogbookListPage = lazy(() => import('./pages/logbook/LogbookListPage').then((m) => ({ default: m.LogbookListPage })))
+const ProcedureCreatePage = lazy(() => import('./pages/logbook/ProcedureCreatePage').then((m) => ({ default: m.ProcedureCreatePage })))
+const ProcedureDetailPage = lazy(() => import('./pages/logbook/ProcedureDetailPage').then((m) => ({ default: m.ProcedureDetailPage })))
+const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })))
+const CatalogPage = lazy(() => import('./pages/marketplace/CatalogPage').then((m) => ({ default: m.CatalogPage })))
+const ProductDetailPage = lazy(() => import('./pages/marketplace/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage })))
+const CartPage = lazy(() => import('./pages/marketplace/CartPage').then((m) => ({ default: m.CartPage })))
+const OrdersPage = lazy(() => import('./pages/marketplace/OrdersPage').then((m) => ({ default: m.OrdersPage })))
+const OrderDetailPage = lazy(() => import('./pages/marketplace/OrderDetailPage').then((m) => ({ default: m.OrderDetailPage })))
+const NotificationCenter = lazy(() => import('./pages/NotificationCenter').then((m) => ({ default: m.NotificationCenter })))
+const PlacementListPage = lazy(() => import('./pages/training/PlacementListPage').then((m) => ({ default: m.PlacementListPage })))
+const PlacementCreatePage = lazy(() => import('./pages/training/PlacementCreatePage').then((m) => ({ default: m.PlacementCreatePage })))
+const PlacementDetailPage = lazy(() => import('./pages/training/PlacementDetailPage').then((m) => ({ default: m.PlacementDetailPage })))
+const CompetencyCatalogPage = lazy(() => import('./pages/training/CompetencyCatalogPage').then((m) => ({ default: m.CompetencyCatalogPage })))
+const CompetencyDetailPage = lazy(() => import('./pages/training/CompetencyDetailPage').then((m) => ({ default: m.CompetencyDetailPage })))
+const AssessmentListPage = lazy(() => import('./pages/training/AssessmentListPage').then((m) => ({ default: m.AssessmentListPage })))
+const AssessmentCreatePage = lazy(() => import('./pages/training/AssessmentCreatePage').then((m) => ({ default: m.AssessmentCreatePage })))
+const AssessmentDetailPage = lazy(() => import('./pages/training/AssessmentDetailPage').then((m) => ({ default: m.AssessmentDetailPage })))
+
+function SessionLoading({ message }: { message: string }) {
+  return (
+    <div className="page-loading" role="status">
+      <Spinner size="md" />
+      <span>{message}</span>
+    </div>
+  )
+}
 
 function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
   const { status } = useAuth()
   const location = useLocation()
 
   if (status === 'loading') {
-    return (
-      <div className="page-loading" role="status">
-        <Spinner size="md" />
-        <span>Checking your session…</span>
-      </div>
-    )
+    return <SessionLoading message="Checking your session…" />
   }
   if (status === 'authenticated') {
     const from = (location.state as { from?: string } | null)?.from ?? '/'
@@ -59,12 +65,7 @@ function LandingRoute() {
   const { status } = useAuth()
 
   if (status === 'loading') {
-    return (
-      <div className="page-loading" role="status">
-        <Spinner size="md" />
-        <span>Checking your session…</span>
-      </div>
-    )
+    return <SessionLoading message="Checking your session…" />
   }
   if (status === 'authenticated') {
     return <Navigate to="/dashboard" replace />
@@ -72,90 +73,101 @@ function LandingRoute() {
   return <LandingPage />
 }
 
+function ScreenFallback() {
+  return (
+    <div className="page-loading" role="status">
+      <Spinner size="md" />
+      <span>Loading…</span>
+    </div>
+  )
+}
+
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingRoute />} />
-      <Route
-        path="/login"
-        element={
-          <RedirectIfAuthenticated>
-            <LoginPage />
-          </RedirectIfAuthenticated>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <RedirectIfAuthenticated>
-            <RegisterPage />
-          </RedirectIfAuthenticated>
-        }
-      />
-      <Route
-        path="/verify-email"
-        element={
-          <RedirectIfAuthenticated>
-            <VerifyEmailPage />
-          </RedirectIfAuthenticated>
-        }
-      />
-      <Route
-        path="/forgot-password"
-        element={
-          <RedirectIfAuthenticated>
-            <ForgotPasswordPage />
-          </RedirectIfAuthenticated>
-        }
-      />
-      <Route
-        path="/reset-password"
-        element={
-          <RedirectIfAuthenticated>
-            <ResetPasswordPage />
-          </RedirectIfAuthenticated>
-        }
-      />
-      <Route
-        path="/mfa"
-        element={
-          <RedirectIfAuthenticated>
-            <MfaPage />
-          </RedirectIfAuthenticated>
-        }
-      />
-      <Route
-        element={
-          <ProtectedRoute>
-            <AppShell />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/account" element={<AccountPage />} />
-        <Route path="/notifications" element={<NotificationCenter />} />
-        <Route path="/training" element={<PlacementListPage />} />
-        <Route path="/training/placements/new" element={<PlacementCreatePage />} />
-        <Route path="/training/placements/:id" element={<PlacementDetailPage />} />
-        <Route path="/training/competencies" element={<CompetencyCatalogPage />} />
-        <Route path="/training/competencies/:id" element={<CompetencyDetailPage />} />
-        <Route path="/training/assessments" element={<AssessmentListPage />} />
-        <Route path="/training/assessments/new" element={<AssessmentCreatePage />} />
-        <Route path="/training/assessments/:id" element={<AssessmentDetailPage />} />
-        <Route path="/institution" element={<InstitutionAdminPage />} />
-        <Route path="/supplier" element={<SupplierWorkspacePage />} />
-        <Route path="/admin" element={<PlatformAdminPage />} />
-        <Route path="/logbook" element={<LogbookListPage />} />
-        <Route path="/logbook/new" element={<ProcedureCreatePage />} />
-        <Route path="/logbook/:id" element={<ProcedureDetailPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/marketplace" element={<CatalogPage />} />
-        <Route path="/marketplace/products/:id" element={<ProductDetailPage />} />
-        <Route path="/marketplace/cart" element={<CartPage />} />
-        <Route path="/marketplace/orders" element={<OrdersPage />} />
-        <Route path="/marketplace/orders/:id" element={<OrderDetailPage />} />
-      </Route>
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <Suspense fallback={<ScreenFallback />}>
+      <Routes>
+        <Route path="/" element={<LandingRoute />} />
+        <Route
+          path="/login"
+          element={
+            <RedirectIfAuthenticated>
+              <LoginPage />
+            </RedirectIfAuthenticated>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <RedirectIfAuthenticated>
+              <RegisterPage />
+            </RedirectIfAuthenticated>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <RedirectIfAuthenticated>
+              <VerifyEmailPage />
+            </RedirectIfAuthenticated>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <RedirectIfAuthenticated>
+              <ForgotPasswordPage />
+            </RedirectIfAuthenticated>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <RedirectIfAuthenticated>
+              <ResetPasswordPage />
+            </RedirectIfAuthenticated>
+          }
+        />
+        <Route
+          path="/mfa"
+          element={
+            <RedirectIfAuthenticated>
+              <MfaPage />
+            </RedirectIfAuthenticated>
+          }
+        />
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppShell />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/notifications" element={<NotificationCenter />} />
+          <Route path="/training" element={<PlacementListPage />} />
+          <Route path="/training/placements/new" element={<PlacementCreatePage />} />
+          <Route path="/training/placements/:id" element={<PlacementDetailPage />} />
+          <Route path="/training/competencies" element={<CompetencyCatalogPage />} />
+          <Route path="/training/competencies/:id" element={<CompetencyDetailPage />} />
+          <Route path="/training/assessments" element={<AssessmentListPage />} />
+          <Route path="/training/assessments/new" element={<AssessmentCreatePage />} />
+          <Route path="/training/assessments/:id" element={<AssessmentDetailPage />} />
+          <Route path="/institution" element={<InstitutionAdminPage />} />
+          <Route path="/supplier" element={<SupplierWorkspacePage />} />
+          <Route path="/admin" element={<PlatformAdminPage />} />
+          <Route path="/logbook" element={<LogbookListPage />} />
+          <Route path="/logbook/new" element={<ProcedureCreatePage />} />
+          <Route path="/logbook/:id" element={<ProcedureDetailPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/marketplace" element={<CatalogPage />} />
+          <Route path="/marketplace/products/:id" element={<ProductDetailPage />} />
+          <Route path="/marketplace/cart" element={<CartPage />} />
+          <Route path="/marketplace/orders" element={<OrdersPage />} />
+          <Route path="/marketplace/orders/:id" element={<OrderDetailPage />} />
+        </Route>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
   )
 }
