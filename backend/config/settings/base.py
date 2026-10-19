@@ -248,6 +248,10 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "v1",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v1",
+    "ENUM_NAME_OVERRIDES": {
+        "UserRoleEnum": "apps.accounts.models.UserRole.choices",
+        "ParticipantRoleEnum": "apps.logbook.models.ParticipantRole.choices",
+    },
     "APPEND_COMPONENTS": {
         "securitySchemes": {
             "JWTAuth": {

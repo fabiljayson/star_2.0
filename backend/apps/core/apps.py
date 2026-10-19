@@ -6,3 +6,6 @@ class CoreConfig(AppConfig):
     name = "apps.core"
     label = "core"
     verbose_name = "STAR core"
+
+    def ready(self):
+        from . import schema_ext  # noqa: F401 registers OpenAPI extensions
