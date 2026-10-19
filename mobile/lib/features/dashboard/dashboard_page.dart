@@ -6,6 +6,7 @@ import '../../core/app_session.dart';
 import '../../features/logbook/logbook_repository.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
+import '../marketplace/marketplace_page.dart';
 
 /// Post-sign-in home: payments-free summary + notifications preview.
 class DashboardPage extends StatefulWidget {
@@ -108,6 +109,29 @@ class _DashboardPageState extends State<DashboardPage> {
                             StatusBadge(status: role),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                StarGlass(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const MarketplacePage(),
+                      ),
+                    );
+                  },
+                  child: const Row(
+                    children: [
+                      Icon(Icons.storefront_outlined, color: StarColors.primary),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Marketplace',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right),
                     ],
                   ),
                 ),

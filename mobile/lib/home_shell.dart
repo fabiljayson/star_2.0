@@ -6,7 +6,12 @@ import 'features/auth/login_page.dart';
 import 'features/auth/mfa_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/logbook/logbook_list_page.dart';
+import 'features/marketplace/orders_page.dart';
+import 'features/notifications/notifications_page.dart';
+import 'features/onboarding/onboarding_page.dart';
 import 'theme.dart';
+
+const _buyerRoles = {'buyer', 'platform_admin', 'supplier'};
 
 /// Signed-in home with bottom navigation.
 class HomeShell extends StatefulWidget {
@@ -21,25 +26,46 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _tab,
-        children: const [DashboardPage(), LogbookListPage()],
+    final session = context.watch<AppSession>();
+    final user = session.user;
+    final hasOrdersAccess = user != null &&
+        (user.isPlatformAdmin ||
+            user.roleNames.any((role) => _buyerRoles.contains(role)));
+    final pages = <Widget>[
+      const DashboardPage(),
+      const LogbookListPage(),
+      if (hasOrdersAccess) const OrdersPage(),
+      const NotificationsPage(),
+    ];
+    final destinations = <Widget>[
+      const NavigationDestination(
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard),
+        label: 'Home',
       ),
+      const NavigationDestination(
+        icon: Icon(Icons.description_outlined),
+        selectedIcon: Icon(Icons.description),
+        label: 'Logbook',
+      ),
+      if (hasOrdersAccess)
+        const NavigationDestination(
+          icon: Icon(Icons.receipt_long_outlined),
+          selectedIcon: Icon(Icons.receipt_long),
+          label: 'Orders',
+        ),
+      const NavigationDestination(
+        icon: Icon(Icons.notifications_outlined),
+        selectedIcon: Icon(Icons.notifications),
+        label: 'Alerts',
+      ),
+    ];
+    final tab = _tab.clamp(0, pages.length - 1);
+    return Scaffold(
+      body: IndexedStack(index: tab, children: pages),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.description_outlined),
-            selectedIcon: Icon(Icons.description),
-            label: 'Logbook',
-          ),
-        ],
+        selectedIndex: tab,
+        destinations: [for (final dest in destinations) dest],
         onDestinationSelected: (index) => setState(() => _tab = index),
       ),
     );
@@ -56,12 +82,25 @@ class AuthGate extends StatelessWidget {
     return switch (session.phase) {
       AuthPhase.restoring => const BootScreen(),
       AuthPhase.requiresMfa => const MfaPage(),
-      AuthPhase.signedOut => const LoginPage(),
+      AuthPhase.signedOut => const FirstRunGate(),
       AuthPhase.signedIn => const HomeShell(),
     };
   }
 }
 
+/// Almost-instant gate: first launch shows the tour, then the login form.
+class FirstRunGate extends StatelessWidget {
+  const FirstRunGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final seenOnboarding = context.watch<AppSession>().onboardingDone;
+    if (!seenOnboarding) return const OnboardingPage();
+    return const LoginPage();
+  }
+}
+
+/// Branded loading screen shown while the session is restored.
 class BootScreen extends StatelessWidget {
   const BootScreen({super.key});
 
@@ -69,13 +108,49 @@ class BootScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: StarColors.canvasDeep,
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: StarColors.primary),
-            SizedBox(height: 16),
-            Text('STAR', style: TextStyle(letterSpacing: 4, fontSize: 18)),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: StarColors.glassTint,
+                border: Border.fromBorderSide(
+                  BorderSide(color: StarColors.glassRim, width: 1.2),
+                ),
+              ),
+              child: const Icon(Icons.medical_services_outlined,
+                  size: 44, color: StarColors.primary),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'STAR',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 8,
+                color: StarColors.textInverse,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Surgical tracking & assessment',
+              style: TextStyle(
+                fontSize: 12,
+                color: StarColors.textInverseMuted,
+              ),
+            ),
+            const SizedBox(height: 28),
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: StarColors.primary,
+              ),
+            ),
           ],
         ),
       ),
