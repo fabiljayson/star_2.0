@@ -270,6 +270,7 @@ class TestDisputes:
             f"{response.data['id']}/download/"
         )
         assert download.status_code == status.HTTP_200_OK
+        assert "no-store" in download["Cache-Control"]
         assert download["Content-Disposition"].startswith("attachment")
 
     def test_outsider_cannot_add_evidence(

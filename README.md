@@ -10,15 +10,16 @@ STAR is a documentation, education and commerce platform. It does **not**
 diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
-> **Status:** Milestones 1–5 delivered (foundations, surgical logbook,
-> education, mock transcription, in-app notifications, reports/exports and the
+> **Status:** Milestones 1–7 delivered (foundations, surgical logbook,
+> education, mock transcription, in-app notifications, reports/exports, the
 > full marketplace: catalog, inventory, orders, sandbox payments, shipping,
-> refunds and disputes).
-> Milestone 6 is in progress: the React web app covers authentication,
-> dashboard, logbook, training, reporting, marketplace, notifications and the
-> institution, supplier and platform administration workspaces.
+> refunds and disputes, plus cross-cutting E2E scenario tests, security
+> hardening invariants and deployment docs).
+> Milestone 6 web app covers authentication, dashboard, logbook, training,
+> reporting, marketplace, notifications and the institution, supplier and
+> platform administration workspaces.
 > The Flutter mobile client is still outstanding.
-> See [Milestones](#milestones).
+> See [Milestones](#milestones) and [docs/deployment.md](docs/deployment.md).
 
 ---
 
@@ -34,6 +35,7 @@ medical record system.
 - [Repository layout](#repository-layout)
 - [Milestones](#milestones)
 - [Security notes](#security-notes)
+- [Deployment](https://github.com/fabiljayson/star_2.0/blob/main/docs/deployment.md)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -271,8 +273,8 @@ star/
 | 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **done** (203 tests) |
 | 4 | Reports and exports (PDF/CSV) | **done** (9 report types, 245 tests) |
 | 5 | Marketplace: suppliers, catalog, inventory, orders, sandbox payments, shipping, refunds, disputes, marketplace reports | **done** (312 tests) |
-| 6 | Complete web interfaces (mobile outstanding) | **in progress** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
-| 7 | Tests for scenarios A–H, security checks, deployment docs | planned |
+| 6 | Complete web interfaces (mobile outstanding) | **done** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
+| 7 | Tests for scenarios A–H, security checks, deployment docs | **done** (327 tests) |
 
 See `docs/architecture.md` for design decisions and security notes.
 
