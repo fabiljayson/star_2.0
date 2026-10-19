@@ -30,6 +30,8 @@ medical record system.
 - [Quick start](#quick-start)
 - [Running the test suite](#running-the-test-suite)
 - [API](#api)
+- [Web app screens](#web-app-screens)
+- [Mobile app (experimental)](#mobile-app-experimental)
 - [Ports](#ports)
 - [Demo data](#demo-data)
 - [Repository layout](#repository-layout)
@@ -208,6 +210,25 @@ navigation entry points at an empty page.
 Role gating is applied twice: navigation items only appear for accounts that
 hold the required role, and each workspace also renders an explicit
 access-denied state when opened directly without that role.
+
+## Mobile app (experimental)
+
+`mobile/` hosts the Flutter client for the clinical core (sign in, TOTP MFA,
+dashboard, surgical logbook). It is developed with [fvm] pinned to the stable
+channel (`fvm use` reads `mobile/.fvmrc`):
+
+```bash
+cd mobile
+fvm flutter test                 # 17 tests (client, session, auth UI flows)
+fvm flutter analyze
+fvm flutter build apk --release --split-per-abi   # per-device APKs
+```
+
+Point it at the API with « Other server… » on the sign-in screen (the default
+is the Android-emulator alias `10.0.2.2`; on a real phone enter the computer's
+LAN address, for example `http://192.168.1.10:8002/api/v1`). Cleartext HTTP is
+allowed only as a development convenience — replace it with HTTPS in any real
+deployment.
 
 ## Ports
 
