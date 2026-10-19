@@ -45,7 +45,7 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final unreadData = session.api.getJson('notifications/unread-count/');
       final value = await unreadData;
-      if (value case {'unread': final num n}) unread = n.toInt();
+      if (value case {'count': final num n}) unread = n.toInt();
     } on ApiException {
       unread = -1;
     }
