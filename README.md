@@ -123,15 +123,15 @@ platform-administrator rights (`is_platform_admin`, staff access to
 
 ```bash
 cd backend
-uv run pytest          # 312 tests (Milestones 1–5)
+uv run pytest          # 327 tests (Milestones 1–7)
 uv run ruff check .    # lint
 uv run python manage.py makemigrations --check --dry-run   # migrations up to date?
 
 cd ../web
-npm run lint           # oxlint
+npx oxlint src         # lint
 npx tsc -b             # typecheck
 npm run test           # vitest (57 tests)
-npm run build          # production build
+npm run build          # production build (includes typecheck)
 ```
 
 Tests run against a dedicated `test_star` PostgreSQL database
