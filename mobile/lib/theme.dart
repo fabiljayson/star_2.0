@@ -67,13 +67,14 @@ extension StarStatusX on String {
 }
 
 class StarGlass extends StatelessWidget {
-  const StarGlass({super.key, required this.child, this.padding});
+  const StarGlass({super.key, required this.child, this.padding, this.onTap});
   final Widget child;
   final EdgeInsetsGeometry? padding;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final container = Container(
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: StarColors.glassTint,
@@ -88,6 +89,15 @@ class StarGlass extends StatelessWidget {
         ],
       ),
       child: child,
+    );
+    if (onTap == null) return container;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(StarColors.radiusLg),
+        child: container,
+      ),
     );
   }
 }

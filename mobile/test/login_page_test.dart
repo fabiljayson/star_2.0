@@ -10,7 +10,9 @@ import 'package:star_mobile/core/app_session.dart';
 import 'package:star_mobile/core/session_store.dart';
 import 'package:star_mobile/features/auth/login_page.dart';
 import 'package:star_mobile/features/auth/mfa_page.dart';
+import 'package:star_mobile/features/onboarding/onboarding_page.dart';
 import 'package:star_mobile/home_shell.dart';
+
 
 const _user = {
   'id': '11111111-1111-1111-1111-111111111111',
@@ -21,8 +23,13 @@ const _user = {
   'roles': <Map<String, dynamic>>[],
 };
 
-Future<void> _pump(WidgetTester tester, AppSession session) async {
+Future<void> _pump(
+  WidgetTester tester,
+  AppSession session, {
+  bool skipTour = true,
+}) async {
   await session.restore();
+  if (skipTour) await session.completeOnboarding();
   await tester.pumpWidget(
     ChangeNotifierProvider<AppSession>.value(
       value: session,
@@ -44,7 +51,46 @@ Future<void> _fillCredentials(
   await tester.pump();
 }
 
+/// Session whose login completes in one step (dashboard test uses it).
+AppSession _signableSession(SessionStore store) => AppSession(
+      store: store,
+      clientFactory: (tokens) => ApiClient(
+        baseUrl: 'http://test.local/api/v1',
+        tokens: tokens,
+        httpClient: MockClient((request) async {
+          if (request.url.path.endsWith('auth/login/')) {
+            return http.Response(
+              jsonEncode({
+                'mfa_required': false,
+                'access': 'acc1',
+                'refresh': 'ref1',
+                'user': _user,
+              }),
+              200,
+            );
+          }
+          return http.Response(jsonEncode({'count': 0, 'results': []}), 200);
+        }),
+      ),
+    );
+
 void main() {
+  testWidgets('first launch shows the tour, Skip leads to sign in',
+      (tester) async {
+    final session =
+        _signableSession(SessionStore(storage: MemorySecureStore()));
+    await _pump(tester, session, skipTour: false);
+
+    expect(session.onboardingDone, isFalse);
+    expect(find.byType(OnboardingPage), findsOneWidget);
+
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+    expect(session.onboardingDone, isTrue);
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(find.byType(OnboardingPage), findsNothing);
+  });
+
   testWidgets('successful sign-in lands on the dashboard', (tester) async {
     final store = SessionStore(storage: MemorySecureStore());
     final session = AppSession(
@@ -65,7 +111,7 @@ void main() {
             );
           }
           if (request.url.path.endsWith('notifications/unread-count/')) {
-            return http.Response(jsonEncode({'unread': 0}), 200);
+            return http.Response(jsonEncode({'count': 0}), 200);
           }
           return http.Response(
             jsonEncode({'count': 0, 'results': []}),

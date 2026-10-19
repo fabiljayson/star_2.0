@@ -177,6 +177,32 @@ void main() {
     expect(await store.load(), isNotNull, reason: 'offline: keep local data');
   });
 
+  test('onboarding completion persists across sessions', () async {
+    final store = SessionStore(storage: MemorySecureStore());
+    final session = _sessionWithHandler(
+      store,
+      (request) async => http.Response('', 404),
+    );
+    expect(session.onboardingDone, isTrue, reason: 'default before restore');
+    await session.restore();
+    expect(session.onboardingDone, isFalse, reason: 'fresh install');
+
+    await session.completeOnboarding();
+    expect(session.onboardingDone, isTrue);
+    expect(await store.isOnboardingDone(), isTrue);
+
+    final reloaded = AppSession(
+      store: store,
+      clientFactory: (tokens) => ApiClient(
+        baseUrl: 'http://test.local/api/v1',
+        tokens: tokens,
+        httpClient: MockClient((request) async => http.Response('', 404)),
+      ),
+    );
+    await reloaded.restore();
+    expect(reloaded.onboardingDone, isTrue);
+  });
+
   test('logout clears the local session even if the server is offline',
       () async {
     final store = SessionStore(storage: MemorySecureStore());

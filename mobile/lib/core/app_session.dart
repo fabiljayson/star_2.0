@@ -61,6 +61,7 @@ class AppSession extends ChangeNotifier implements ApiTokenSource {
 
   AuthPhase phase = AuthPhase.restoring;
   StarUser? user;
+  bool onboardingDone = true;
 
   String? _accessToken;
   String? _refreshToken;
@@ -77,6 +78,7 @@ class AppSession extends ChangeNotifier implements ApiTokenSource {
   Future<void> restore() async {
     serverUrl = await store.loadServerUrl() ?? _apiBaseFallback;
     _client.baseUrl = serverUrl;
+    onboardingDone = await store.isOnboardingDone();
     final stored = await store.load();
     if (stored == null) {
       _setPhase(AuthPhase.signedOut);
@@ -137,6 +139,13 @@ class AppSession extends ChangeNotifier implements ApiTokenSource {
   void cancelMfa() {
     _mfaToken = null;
     _setPhase(AuthPhase.signedOut);
+  }
+
+  /// Mark the first-launch tour as seen (persists across restarts).
+  Future<void> completeOnboarding() async {
+    onboardingDone = true;
+    await store.markOnboardingDone();
+    notifyListeners();
   }
 
   Future<void> _applyTokens(Map<String, dynamic> data) async {

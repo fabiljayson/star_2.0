@@ -69,6 +69,7 @@ class MemorySecureStore implements SecureKeyValueStore {
 
 const sessionStorageKey = 'star.stored_session';
 const serverUrlStorageKey = 'star.server_url';
+const onboardingDoneKey = 'star.onboarding_done';
 
 class SessionStore {
   SessionStore({required this.storage, this.maximumSessions = 1});
@@ -95,4 +96,13 @@ class SessionStore {
 
   Future<void> saveServerUrl(String? url) =>
       storage.writeValue(serverUrlStorageKey, url);
+
+  /// True only when the first-launch tour was finished (or skipped).
+  Future<bool> isOnboardingDone() async {
+    final raw = await storage.readValue(onboardingDoneKey);
+    return raw == 'done';
+  }
+
+  Future<void> markOnboardingDone() =>
+      storage.writeValue(onboardingDoneKey, 'done');
 }

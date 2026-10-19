@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'core/app_session.dart';
 import 'core/session_store.dart';
+import 'features/notifications/foreground_notifier.dart';
 import 'home_shell.dart';
 import 'theme.dart';
 
@@ -43,11 +44,13 @@ class _StarMobileAppState extends State<StarMobileApp> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _session,
-      child: MaterialApp(
-        title: 'STAR',
-        debugShowCheckedModeBanner: false,
-        theme: buildStarTheme(),
-        home: const AuthGate(),
+      child: NotificationForegroundPoller(
+        child: MaterialApp(
+          title: 'STAR',
+          debugShowCheckedModeBanner: false,
+          theme: buildStarTheme(),
+          home: const AuthGate(),
+        ),
       ),
     );
   }
