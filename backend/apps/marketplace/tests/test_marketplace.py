@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 from rest_framework import status
 
 from apps.accounts.models import RoleAssignment, UserRole
@@ -14,6 +16,8 @@ from apps.marketplace.models import (
     Order,
     Product,
     ProductCategory,
+    SellerSubscription,
+    SubscriptionStatus,
     SupplierProfile,
 )
 
@@ -279,8 +283,19 @@ class TestCartCheckout:
         self, sellable_product, verified_profile, db, buyer_user, client_factory
     ):
         category = ProductCategory.objects.create(name="Tubes", slug="tubes")
+        other_user = UserFactory(email="other.supplier@example.test")
+        RoleAssignment.objects.create(user=other_user, role=UserRole.SUPPLIER)
+        SellerSubscription.objects.create(
+            user=other_user,
+            plan="annual",
+            status=SubscriptionStatus.ACTIVE,
+            amount=Decimal("12000"),
+            currency="XOF",
+            starts_at=timezone.now() - timedelta(days=1),
+            expires_at=timezone.now() + timedelta(days=360),
+        )
         other_profile = SupplierProfile.objects.create(
-            user=UserFactory(email="other.supplier@example.test"),
+            user=other_user,
             company_name="Other Co",
             contact_email="other.supplier@example.test",
         )

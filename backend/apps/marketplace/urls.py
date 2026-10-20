@@ -71,6 +71,19 @@ urlpatterns = [
     path("marketplace/payments/<uuid:pk>/simulate/", views.PaymentSimulateView.as_view()),
     path("marketplace/payments/webhook/", views.PaymentWebhookView.as_view()),
     path("marketplace/refunds/<uuid:pk>/decide/", views.RefundDecideView.as_view()),
+    path("marketplace/subscription/", views.SubscriptionStatusView.as_view()),
+    path(
+        "marketplace/subscription/checkout/",
+        views.SubscriptionCheckoutView.as_view(),
+    ),
+    path(
+        "marketplace/subscription/history/",
+        views.SubscriptionHistoryView.as_view(),
+    ),
+    path(
+        "marketplace/subscription/payments/<uuid:pk>/",
+        views.SubscriptionPaymentDetailView.as_view(),
+    ),
     path("marketplace/disputes/", views.DisputeListView.as_view()),
     path("marketplace/disputes/<uuid:pk>/", views.DisputeDetailView.as_view()),
     path(

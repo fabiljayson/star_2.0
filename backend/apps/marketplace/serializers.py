@@ -15,6 +15,7 @@ from .models import (
     Product,
     ProductCategory,
     Refund,
+    SellerSubscription,
     Shipment,
     SupplierProfile,
 )
@@ -125,6 +126,52 @@ class OrderItemSerializer(serializers.ModelSerializer):
         ]
 
 
+# ── Subscription (M8) ─────────────────────────────────────────────────
+class SubscriptionCheckoutSerializer(serializers.Serializer):
+    plan = serializers.ChoiceField(choices=["monthly", "semiannual", "annual"])
+    idempotency_key = serializers.CharField(
+        max_length=64, allow_blank=True, required=False, default=""
+    )
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SellerSubscription
+        fields = [
+            "id",
+            "reference",
+            "plan",
+            "status",
+            "amount",
+            "currency",
+            "starts_at",
+            "expires_at",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class SubscriptionPaymentSerializer(serializers.ModelSerializer):
+    subscription_detail = SubscriptionSerializer(source="subscription", read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = [
+            "id",
+            "subscription",
+            "subscription_detail",
+            "provider",
+            "status",
+            "amount",
+            "currency",
+            "provider_reference",
+            "failure_reason",
+            "paid_at",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
 class ShippingSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200, allow_blank=True, required=False)
     address = serializers.CharField(allow_blank=True, required=False)
@@ -150,6 +197,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "order",
+            "subscription",
             "provider",
             "status",
             "amount",

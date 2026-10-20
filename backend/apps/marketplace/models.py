@@ -19,6 +19,10 @@ def _new_order_reference() -> str:
     return f"ORD-{timezone.now().year}-{secrets.token_hex(3).upper()}"
 
 
+def _new_subscription_reference() -> str:
+    return f"SUB-{timezone.now().year}-{secrets.token_hex(3).upper()}"
+
+
 # ── Suppliers ──────────────────────────────────────────────────────────
 class SupplierVerificationStatus(models.TextChoices):
     PENDING = "pending", "Pending verification"
@@ -157,12 +161,20 @@ class Product(UUIDModel, TimeStampedModel):
 
     @property
     def is_sellable(self) -> bool:
-        return (
+        if not (
             self.is_active
             and self.is_published
             and self.approval_status == ProductApprovalStatus.APPROVED
             and self.supplier.is_verified
-        )
+        ):
+            return False
+        now = timezone.now()
+        return SellerSubscription.objects.filter(
+            user_id=self.supplier.user_id,
+            status=SubscriptionStatus.ACTIVE,
+            starts_at__lte=now,
+            expires_at__gt=now,
+        ).exists()
 
 
 class InventoryMovementReason(models.TextChoices):
@@ -323,10 +335,15 @@ class PaymentStatus(models.TextChoices):
 
 
 class Payment(UUIDModel, TimeStampedModel):
-    """One payment attempt for an order; webhook outcomes are verified server-side."""
+    """One payment attempt for an order or a subscription; webhook outcomes
+    are verified server-side."""
 
     order = models.ForeignKey(
-        Order, on_delete=models.PROTECT, related_name="payments"
+        Order, null=True, blank=True, on_delete=models.PROTECT, related_name="payments"
+    )
+    subscription = models.ForeignKey(
+        "SellerSubscription", null=True, blank=True, on_delete=models.PROTECT,
+        related_name="payments",
     )
     provider = models.CharField(max_length=32, default="sandbox")
     status = models.CharField(
@@ -352,14 +369,32 @@ class Payment(UUIDModel, TimeStampedModel):
                 fields=["idempotency_key"],
                 condition=~models.Q(idempotency_key=""),
                 name="uniq_payment_idempotency_key",
-            )
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(order__isnull=False, subscription__isnull=True)
+                    | models.Q(order__isnull=True, subscription__isnull=False)
+                ),
+                name="payment_exactly_one_target",
+            ),
         ]
         indexes = [
             models.Index(fields=["order", "-created_at"], name="payment_order_time"),
+            models.Index(
+                fields=["subscription", "-created_at"], name="payment_subscription_time"
+            ),
         ]
 
     def __str__(self) -> str:
-        return f"{self.order.reference} · {self.status}"
+        return f"{self.target_reference} · {self.status}"
+
+    @property
+    def target_reference(self) -> str:
+        if self.order_id is not None:
+            return self.order.reference
+        if self.subscription_id is not None:
+            return self.subscription.reference
+        return "-"
 
     @property
     def is_terminal(self) -> bool:
@@ -395,6 +430,67 @@ class PaymentEvent(UUIDModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.payment.order.reference} · {self.event_type}"
+
+
+# ── Shipping ───────────────────────────────────────────────────────────
+class SubscriptionStatus(models.TextChoices):
+    PENDING = "pending", "Pending payment"
+    ACTIVE = "active", "Active"
+    RENEWED = "renewed", "Renewed by a later period"
+    EXPIRED = "expired", "Expired"
+    CANCELLED = "cancelled", "Cancelled"
+    FAILED = "failed", "Payment failed"
+
+
+class SellerSubscription(UUIDModel, TimeStampedModel):
+    """One paid seller-subscription period for a user.
+
+    The server is the only source of truth: effective access comes from
+    ``status == ACTIVE`` combined with the current server time against
+    ``expires_at``, never from a client-supplied value or a stale status
+    a scheduled job has not flipped yet.
+    """
+
+    reference = models.CharField(
+        max_length=32, unique=True, default=_new_subscription_reference,
+        editable=False, db_index=True,
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="seller_subscriptions",
+    )
+    plan = models.CharField(max_length=16)
+    status = models.CharField(
+        max_length=16,
+        choices=SubscriptionStatus.choices,
+        default=SubscriptionStatus.PENDING,
+        db_index=True,
+    )
+    amount = models.DecimalField(max_digits=MONEY_MAX_DIGITS, decimal_places=0)
+    currency = models.CharField(max_length=3, choices=CURRENCIES, default="XOF")
+    starts_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancel_reason = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "seller subscription"
+        verbose_name_plural = "seller subscriptions"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(status=SubscriptionStatus.ACTIVE),
+                name="uniq_active_subscription_per_user",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "-created_at"], name="sub_user_time"),
+            models.Index(fields=["status", "expires_at"], name="sub_status_expiry"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.reference} · {self.plan} · {self.status}"
 
 
 # ── Shipping ───────────────────────────────────────────────────────────

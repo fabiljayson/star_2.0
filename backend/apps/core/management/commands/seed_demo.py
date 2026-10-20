@@ -157,13 +157,34 @@ class Command(BaseCommand):
         """Synthetic marketplace: verified supplier, one approved product (fictional)."""
         from decimal import Decimal
 
-        from apps.marketplace.models import Product, ProductCategory, SupplierProfile
+        from apps.marketplace.models import (
+            Product,
+            ProductCategory,
+            SellerSubscription,
+            SupplierProfile,
+        )
 
         User = get_user_model()
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        supplier = User.objects.get(email="supplier.demo@example.test")
+        seller_sub, _ = SellerSubscription.objects.get_or_create(
+            user=supplier,
+            status="active",
+            defaults={
+                "plan": "monthly",
+                "amount": Decimal("5000"),
+                "currency": "XOF",
+                "starts_at": timezone.now() - timedelta(days=1),
+                "expires_at": timezone.now() + timedelta(days=29),
+            },
+        )
+
         if Product.objects.exists():
             return
 
-        supplier = User.objects.get(email="supplier.demo@example.test")
         admin = User.objects.filter(is_platform_admin=True).first()
         profile, created = SupplierProfile.objects.get_or_create(
             user=supplier,
@@ -175,8 +196,6 @@ class Command(BaseCommand):
             },
         )
         if created and admin is not None:
-            from django.utils import timezone
-
             profile.verified_at = timezone.now()
             profile.save()
 

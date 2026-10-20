@@ -207,6 +207,7 @@ One command is mandatory; two housekeeping tasks are optional:
 # Cancel unpaid orders past their TTL (PAYMENT_PENDING_TTL_HOURS) and restock.
 # Without it, abandoned checkouts reserve inventory forever.
 0 * * * * cd /srv/star/backend && DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py expire_marketplace_orders >> /srv/star/cron.log 2>&1
+15 * * * * cd /srv/star/backend && DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py expire_marketplace_subscriptions >> /srv/star/cron.log 2>&1
 ```
 
 ## 7. Go-live checklist
@@ -220,6 +221,7 @@ One command is mandatory; two housekeeping tasks are optional:
 - [ ] Sandbox payment webhook returns **400** (“Mock payments are disabled…”)
       because `PAYMENTS_ACCEPT_MOCK=False` in production
 - [ ] `expire_marketplace_orders` cron entry installed (fake a stale order first)
+- [ ] `expire_marketplace_subscriptions` cron entry installed
 - [ ] Backup taken **and restored** on a scratch instance
 - [ ] Platform admin account(s) exist and have MFA enrolled
 - [ ] `docs` + README updated with where the service actually runs

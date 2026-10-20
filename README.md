@@ -256,11 +256,15 @@ institutions or patient data are ever included.
 Never seed demo data into a production environment.
 
 The seed also creates a verified demo supplier (`supplier.demo@example.test`,
-company "Demo Surgical Supplies") with an approved marketplace product.
+company "Demo Surgical Supplies") with an approved marketplace product and an
+**active monthly seller subscription** (plans: monthly 5 000 FCFA, semi-annual
+10 000, annual 12 000; a user's first month is billed 2 500).
 
-Periodic task: run `uv run python manage.py expire_marketplace_orders` (e.g.
+Periodic tasks: run `uv run python manage.py expire_marketplace_orders` (e.g.
 hourly via cron) to cancel orders whose payment window
-(`PAYMENT_PENDING_TTL_HOURS`, default 24 h) elapsed and release their stock.
+(`PAYMENT_PENDING_TTL_HOURS`, default 24 h) elapsed and release their stock,
+and `uv run python manage.py expire_marketplace_subscriptions` to flip lapsed
+seller subscriptions to `expired` and cancel never-paid checkouts.
 
 ---
 
@@ -296,6 +300,7 @@ star/
 | 5 | Marketplace: suppliers, catalog, inventory, orders, sandbox payments, shipping, refunds, disputes, marketplace reports | **done** (312 tests) |
 | 6 | Complete web interfaces (mobile outstanding) | **done** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | **done** (327 tests) |
+| 8 | Seller subscription: monthly paid plans gate listing publication, catalog hides lapsed suppliers, subscription payments reuse the sandbox webhook | **backend done** (349 tests) — web & mobile UI pending |
 
 See `docs/architecture.md` for design decisions and security notes.
 

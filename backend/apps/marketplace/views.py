@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import UserRole
 
-from . import payments, services
+from . import payments, services, subscriptions
 from .models import (
     CartItem,
     Dispute,
@@ -20,6 +20,7 @@ from .models import (
     Product,
     ProductCategory,
     Refund,
+    SellerSubscription,
     SupplierProfile,
 )
 from .serializers import (
@@ -40,6 +41,9 @@ from .serializers import (
     ShipmentSerializer,
     ShipSerializer,
     SimulatePaymentSerializer,
+    SubscriptionCheckoutSerializer,
+    SubscriptionPaymentSerializer,
+    SubscriptionSerializer,
     SupplierProfileSerializer,
 )
 
@@ -140,6 +144,12 @@ class SupplierProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         if product is None:
             raise exceptions.NotFound()
         return product
+
+    def perform_update(self, serializer):
+        wants_publish = bool(serializer.validated_data.get("is_published"))
+        if wants_publish and not serializer.instance.is_published:
+            subscriptions.require_active_subscription(self.request.user)
+        serializer.save()
 
     def perform_destroy(self, instance):
         instance.is_active = False
@@ -419,6 +429,61 @@ class PaymentWebhookView(APIView):
         return Response(
             {"payment": str(payment.pk), "status": payment.status}
         )
+
+
+# ── Seller subscription (M8) ──────────────────────────────────────────
+class SubscriptionStatusView(APIView):
+    def get(self, request):
+        payload = subscriptions.status_payload(request.user)
+        plans = [
+            {
+                "plan": plan,
+                "price_fcfa": subscriptions.price_for(request.user, plan),
+                "duration_months": subscriptions.PLAN_MONTHS[plan],
+            }
+            for plan in (
+                subscriptions.PLAN_MONTHLY,
+                subscriptions.PLAN_SEMIANNUAL,
+                subscriptions.PLAN_ANNUAL,
+            )
+        ]
+        payload["plans"] = plans
+        return Response(payload)
+
+
+class SubscriptionCheckoutView(APIView):
+    def post(self, request):
+        serializer = SubscriptionCheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        subscription, payment, created = subscriptions.start_checkout(
+            request.user,
+            plan=serializer.validated_data["plan"],
+            idempotency_key=serializer.validated_data.get("idempotency_key", ""),
+            request=request,
+        )
+        return Response(
+            SubscriptionPaymentSerializer(payment).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class SubscriptionPaymentDetailView(APIView):
+    def get(self, request, pk):
+        payment = Payment.objects.filter(
+            pk=pk, subscription__user=request.user
+        ).first()
+        if payment is None:
+            raise exceptions.NotFound()
+        return Response(SubscriptionPaymentSerializer(payment).data)
+
+
+class SubscriptionHistoryView(generics.ListAPIView):
+    serializer_class = SubscriptionSerializer
+    pagination_class = None
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        return SellerSubscription.objects.filter(user=self.request.user)
 
 
 # ── Shipping (M5b) ─────────────────────────────────────────────────────

@@ -16,6 +16,16 @@ _GENERIC_MESSAGES = {
 }
 
 
+class SellerSubscriptionRequired(exceptions.APIException):
+    """403 raised when a seller action needs an active paid subscription."""
+
+    status_code = status.HTTP_403_FORBIDDEN
+    default_code = "seller_subscription_required"
+    default_detail = (
+        "An active seller subscription is required to publish equipment."
+    )
+
+
 def _format_detail(detail):
     if isinstance(detail, (list, tuple)):
         return [_format_detail(item) for item in detail]

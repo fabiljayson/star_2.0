@@ -1,13 +1,22 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 
 from apps.accounts.models import RoleAssignment, UserRole
 from apps.accounts.tests.factories import PlatformAdminFactory, UserFactory
 from apps.marketplace import services
-from apps.marketplace.models import Order, Product, ProductCategory, SupplierProfile
+from apps.marketplace.models import (
+    Order,
+    Product,
+    ProductCategory,
+    SellerSubscription,
+    SubscriptionStatus,
+    SupplierProfile,
+)
 
 
 @pytest.fixture
@@ -30,7 +39,21 @@ def platform_admin(db):
 
 
 @pytest.fixture
-def verified_profile(supplier_user, platform_admin):
+def supplier_subscription(supplier_user, db):
+    """An active monthly subscription for the supplier user."""
+    return SellerSubscription.objects.create(
+        user=supplier_user,
+        plan="monthly",
+        status=SubscriptionStatus.ACTIVE,
+        amount=Decimal("5000"),
+        currency="XOF",
+        starts_at=timezone.now() - timedelta(days=1),
+        expires_at=timezone.now() + timedelta(days=29),
+    )
+
+
+@pytest.fixture
+def verified_profile(supplier_user, platform_admin, supplier_subscription):
     profile = SupplierProfile.objects.create(
         user=supplier_user,
         company_name="Acme Surgical",

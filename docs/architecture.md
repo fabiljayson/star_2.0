@@ -208,6 +208,21 @@ Rules enforced in `apps/logbook/services.py`:
   `supplier_favored` keeps the payment).
 - **Isolation:** supplier/buyer roles have no clinical access
   (`MARKETPLACE_ONLY_ROLES` in `apps/logbook/services.py`).
+- **Seller subscription (M8):** publishing requires, on top of the verified
+  `SupplierProfile` flow, an active `SellerSubscription` bought by the same
+  user. Server-side pricing (in `apps/marketplace/subscriptions.py`): the
+  monthly plan costs 5 000 FCFA, the semi-annual 10 000 and the annual
+  12 000; a user's very first month is offered at 2 500. States
+  `pending → active → (renewed|expired)`, plus `cancelled`/`failed`; access
+  is always evaluated against the server clock (`expires_at`), never the
+  status column alone. Publisher endpoints answer `403`
+  `seller_subscription_required` without an active subscription, the public
+  catalog only lists products whose owner is currently subscribed
+  (hidden-but-kept when the subscription lapses, restored on renewal), and
+  checkout/payment reuse the M5b sandbox `Payment`/webhook machinery with a
+  `subscription_reference` payload target (same HMAC, same idempotency).
+  Housekeeping: `expire_marketplace_subscriptions` flips lapsed rows and
+  cancels never-paid checkouts.
 
 ## 4. Authentication & authorization
 

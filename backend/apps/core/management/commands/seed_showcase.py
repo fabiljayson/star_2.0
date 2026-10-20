@@ -20,7 +20,11 @@ from apps.logbook import services as logbook_services
 from apps.logbook.models import PatientReference, ProcedureParticipant, SurgicalProcedure
 from apps.marketplace import payments as marketplace_payments
 from apps.marketplace import services as marketplace_services
-from apps.marketplace.models import Product, ProductCategory
+from apps.marketplace.models import (
+    Product,
+    ProductCategory,
+    SellerSubscription,
+)
 from apps.notifications.models import Notification
 from apps.organizations.models import Department, Institution, Specialty
 from apps.reports import services as reports_services
@@ -589,6 +593,17 @@ class Command(BaseCommand):
 
         admin = self.admin
         for supplier in self.suppliers:
+            SellerSubscription.objects.get_or_create(
+                user=supplier["user"],
+                status="active",
+                defaults={
+                    "plan": "semiannual",
+                    "amount": Decimal("10000"),
+                    "currency": "XOF",
+                    "starts_at": timezone.now() - timedelta(days=30),
+                    "expires_at": timezone.now() + timedelta(days=150),
+                },
+            )
             profile = marketplace_services.register_or_update_profile(
                 supplier["user"],
                 data={

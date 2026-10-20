@@ -31,6 +31,8 @@ from apps.marketplace.models import (
     PaymentEventType,
     PaymentStatus,
     ProductCategory,
+    SellerSubscription,
+    SubscriptionStatus,
     SupplierProfile,
 )
 from apps.marketplace.services import verify_supplier
@@ -100,6 +102,15 @@ def world():
         user=supplier_user,
         company_name="Scenario Surgical Supply",
         contact_email=supplier_user.email,
+    )
+    SellerSubscription.objects.create(
+        user=supplier_user,
+        plan="monthly",
+        status=SubscriptionStatus.ACTIVE,
+        amount=Decimal("5000"),
+        currency="XOF",
+        starts_at=timezone.now() - timedelta(days=1),
+        expires_at=timezone.now() + timedelta(days=29),
     )
     verify_supplier(platform_admin, supplier, approve=True)
     category = ProductCategory.objects.create(name="Scalpels", slug="scalpels")

@@ -14,7 +14,7 @@ from rest_framework import exceptions
 from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
 
-from . import services
+from . import services, subscriptions
 from .models import (
     Dispute,
     InventoryMovement,
@@ -28,6 +28,7 @@ from .models import (
     Product,
     Refund,
     RefundStatus,
+    SellerSubscription,
 )
 
 # Header carrying the provider's HMAC over the raw JSON body.
@@ -136,6 +137,19 @@ def _find_payment(payload: dict) -> Payment | None:
         payment = Payment.objects.filter(provider_reference=provider_reference).first()
         if payment is not None:
             return payment
+    subscription_reference = str(payload.get("subscription_reference") or "")
+    if subscription_reference:
+        subscription = SellerSubscription.objects.filter(
+            reference=subscription_reference
+        ).first()
+        if subscription is None:
+            return None
+        return (
+            subscription.payments.order_by("-created_at")
+            .filter(status=PaymentStatus.PENDING)
+            .first()
+            or subscription.payments.order_by("-created_at").first()
+        )
     order_reference = str(payload.get("order_reference") or "")
     if not order_reference:
         return None
@@ -273,6 +287,11 @@ def _restock_after_refund(order: Order) -> None:
 def _apply_outcome(
     payment: Payment, outcome: str, *, payload: dict, request=None
 ) -> Payment:
+    if payment.subscription_id is not None:
+        subscriptions.apply_outcome(
+            payment, outcome, payload=payload, request=request
+        )
+        return Payment.objects.get(pk=payment.pk)
     order = payment.order
     if outcome == "succeeded":
         if order.status != OrderStatus.PENDING_PAYMENT:
@@ -347,12 +366,15 @@ def simulate_payment(payment: Payment, *, outcome: str, request=None) -> Payment
         )
     payload = {
         "provider_reference": f"MOCK-{uuid.uuid4().hex}",
-        "order_reference": payment.order.reference,
         "amount": str(payment.amount),
         "currency": payment.currency,
         "outcome": outcome,
         "timestamp": timezone.now().isoformat(),
     }
+    if payment.subscription_id is not None:
+        payload["subscription_reference"] = payment.subscription.reference
+    else:
+        payload["order_reference"] = payment.order.reference
     return apply_webhook(payload, sign_payload(payload), request=request)
 
 

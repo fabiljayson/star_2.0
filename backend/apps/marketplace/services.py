@@ -8,6 +8,7 @@ from apps.accounts.models import RoleAssignment, UserRole
 from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
 
+from . import subscriptions
 from .models import (
     Cart,
     CartItem,
@@ -28,6 +29,7 @@ from .models import (
     RefundStatus,
     Shipment,
     ShipmentStatus,
+    SubscriptionStatus,
     SupplierProfile,
     SupplierVerificationStatus,
 )
@@ -102,16 +104,20 @@ def register_or_update_profile(user, *, data: dict, request=None) -> SupplierPro
 
 # ── Catalog ────────────────────────────────────────────────────────────
 def visible_products(user):
-    """Public catalog: approved + published products of verified suppliers."""
+    """Public catalog: approved + published products of verified suppliers
+    whose seller subscription is currently active (server clock decides)."""
     return Product.objects.filter(
         is_active=True,
         is_published=True,
         approval_status=ProductApprovalStatus.APPROVED,
         supplier__verification_status=SupplierVerificationStatus.VERIFIED,
+        supplier__user__seller_subscriptions__status=SubscriptionStatus.ACTIVE,
+        supplier__user__seller_subscriptions__expires_at__gt=timezone.now(),
     ).select_related("category", "supplier")
 
 
 def create_product(profile: SupplierProfile, *, data: dict, request=None) -> Product:
+    subscriptions.require_active_subscription(profile.user)
     product = Product.objects.create(supplier=profile, **data)
     record_audit(
         request=request,
@@ -127,6 +133,11 @@ def create_product(profile: SupplierProfile, *, data: dict, request=None) -> Pro
 def update_product(profile: SupplierProfile, product: Product, *, data: dict) -> Product:
     if product.supplier_id != profile.pk:
         raise exceptions.NotFound()
+    if (
+        data.get("is_published")
+        and not product.is_published
+    ):
+        subscriptions.require_active_subscription(profile.user)
     for field, value in data.items():
         setattr(product, field, value)
     product.save()
