@@ -300,7 +300,7 @@ star/
 | 5 | Marketplace: suppliers, catalog, inventory, orders, sandbox payments, shipping, refunds, disputes, marketplace reports | **done** (312 tests) |
 | 6 | Complete web interfaces (mobile outstanding) | **done** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | **done** (327 tests) |
-| 8 | Seller subscription: monthly paid plans gate listing publication, catalog hides lapsed suppliers, subscription payments reuse the sandbox webhook | **backend done** (349 tests) — web & mobile UI pending |
+| 8 | Seller subscription: monthly paid plans gate listing publication, catalog hides lapsed suppliers, subscription payments reuse the sandbox webhook | **done** — backend (349 tests), web (61 tests) & mobile (22 tests) |
 
 See `docs/architecture.md` for design decisions and security notes.
 
