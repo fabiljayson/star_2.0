@@ -187,6 +187,7 @@ Endpoint groups implemented in Milestone 1:
 | Reports | `GET|POST /api/v1/reports/`, `GET .../{id}/`, `GET .../{id}/download/` (CSV/PDF, links expire) |
 | Marketplace | `GET /api/v1/marketplace/categories/`, `GET .../products/`, `GET|POST|PATCH .../supplier/profile/`, `GET|POST|PATCH|DELETE .../supplier/products/`, `POST .../supplier/products/{id}/restock/`, `GET|POST .../cart/items/`, `POST .../checkout/`, `GET .../orders/`, `POST .../orders/{id}/cancel/` |
 | Payments & fulfillment | `POST .../orders/{id}/pay/` (Idempotency-Key), `POST .../payments/webhook/` (HMAC), `POST .../payments/{id}/simulate/` (admin, sandbox), `POST .../orders/{id}/ship|deliver/`, `POST .../orders/{id}/refund-request/`, `POST .../refunds/{id}/decide/`, `GET|POST .../orders/{id}/dispute/`, `POST .../disputes/{id}/evidence|resolve/`, `GET .../disputes/{id}/evidence/{eid}/download/` |
+| Legal Center | `GET /api/v1/legal/policies/`, `GET .../policies/{slug}/?lang=fr`, `GET .../policies/{slug}/versions/`, `POST .../legal/consents/`, `GET .../consents/mine/`, `GET .../consents/status/`, `POST .../consents/withdraw/`, `GET|POST .../privacy-requests/`, `POST .../privacy-requests/{id}/review/`, admin lifecycle `GET .../policy-versions/`, `POST .../policies/{slug}/versions/create/`, `POST .../policy-versions/{id}/submit-review|approve|publish|archive/` |
 | Ops | `GET /api/v1/health/`, `/schema/`, `/docs/` |
 
 ---
@@ -266,6 +267,12 @@ hourly via cron) to cancel orders whose payment window
 and `uv run python manage.py expire_marketplace_subscriptions` to flip lapsed
 seller subscriptions to `expired` and cancel never-paid checkouts.
 
+The Policies & Legal Center is seeded with
+`uv run python manage.py seed_legal`: six bilingual (EN/FR) policy texts
+published as version 1.0, including the Terms of Service registration
+consent is checked against. Registration without the published Terms version
+therefore requires the seed (or equivalent data).
+
 ---
 
 ## Repository layout
@@ -279,6 +286,7 @@ star/
 │   ├── apps/organizations/  # institutions, departments, specialties
 │   ├── apps/logbook/        # surgical records, lifecycle, attachments
 │   ├── apps/training/       # placements, competencies, assessments
+│   ├── apps.legal           # Policies & Legal Center, consents, privacy requests
 │   └── conftest.py          # shared pytest fixtures
 ├── web/                     # React + Vite app (Milestone 6, port 5174)
 ├── docs/                    # architecture, requirements, security, ...
@@ -301,6 +309,7 @@ star/
 | 6 | Complete web interfaces (mobile outstanding) | **done** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | **done** (327 tests) |
 | 8 | Seller subscription: monthly paid plans gate listing publication, catalog hides lapsed suppliers, subscription payments reuse the sandbox webhook | **done** — backend (349 tests), web (61 tests) & mobile (22 tests) |
+| 9 | Policies & Legal Center: six bilingual policies, versioned lifecycle with published/draft separation, consent recording at registration, privacy requests, admin workflow | **backend done** `apps.legal` (370 tests) — web (M9b) & mobile (M9c) pending |
 
 See `docs/architecture.md` for design decisions and security notes.
 

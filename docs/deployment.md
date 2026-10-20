@@ -222,6 +222,11 @@ One command is mandatory; two housekeeping tasks are optional:
       because `PAYMENTS_ACCEPT_MOCK=False` in production
 - [ ] `expire_marketplace_orders` cron entry installed (fake a stale order first)
 - [ ] `expire_marketplace_subscriptions` cron entry installed
+- [ ] Policy Center: `seed_legal` reviewed by legal counsel, operator
+      placeholders (`[[Operator name — to be supplied]]`, contact e-mail,
+      liability limits) replaced before any publication
+- [ ] Only platform editors publish policy versions; drafts are never
+      linked to consents and never served to the public Policy Center
 - [ ] Backup taken **and restored** on a scratch instance
 - [ ] Platform admin account(s) exist and have MFA enrolled
 - [ ] `docs` + README updated with where the service actually runs

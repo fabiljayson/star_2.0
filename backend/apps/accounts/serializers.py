@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
@@ -104,6 +105,7 @@ class RegisterSerializer(serializers.Serializer):
         choices=[(role, role) for role in sorted(OPEN_REGISTRATION_ROLES)],
         default=UserRole.BUYER,
     )
+    accepted_terms_version = serializers.CharField(max_length=32, required=False, allow_blank=True)
 
     def validate_email(self, value: str) -> str:
         value = value.strip().lower()
@@ -115,7 +117,36 @@ class RegisterSerializer(serializers.Serializer):
         validate_password(value)
         return value
 
+    def validate_accepted_terms_version(self, value: str) -> str:
+        from apps.legal import services as legal_services
+
+        published = legal_services.published_terms_version()
+        if published is None:
+            # No Terms published yet: registration may continue without a
+            # consent record (demonstration environment).
+            return ""
+        if value.strip() != published.version:
+            raise serializers.ValidationError(
+                f"You must accept the current published Terms ({published.version})."
+            )
+        return published.version
+
+    def validate(self, attrs: dict) -> dict:
+        from apps.legal import services as legal_services
+
+        if legal_services.published_terms_version() is not None:
+            accepted = (attrs.get("accepted_terms_version") or "").strip()
+            if not accepted:
+                raise serializers.ValidationError(
+                    {"accepted_terms_version": (
+                        "You must accept the current published Terms of Service "
+                        "to register."
+                    )}
+                )
+        return attrs
+
     def create(self, validated_data) -> User:
+        accepted_version = validated_data.pop("accepted_terms_version", "")
         user = User(
             email=validated_data["email"],
             first_name=validated_data.get("first_name", ""),
@@ -123,12 +154,24 @@ class RegisterSerializer(serializers.Serializer):
             is_verified=not settings.REQUIRE_EMAIL_VERIFICATION,
         )
         user.set_password(validated_data["password"])
-        user.save()
-        RoleAssignment.objects.create(
-            user=user,
-            role=validated_data["role"],
-            institution=None,
-        )
+        with transaction.atomic():
+            user.save()
+            RoleAssignment.objects.create(
+                user=user,
+                role=validated_data["role"],
+                institution=None,
+            )
+            if accepted_version:
+                from apps.legal import services as legal_services
+                from apps.legal.models import ConsentContext
+
+                terms = legal_services.published_terms_version()
+                if terms is not None:
+                    legal_services.record_consent(
+                        user=user,
+                        policy_version=terms,
+                        context=ConsentContext.REGISTRATION,
+                    )
         return user
 
 

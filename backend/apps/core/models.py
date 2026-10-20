@@ -119,6 +119,19 @@ class AuditEvent(UUIDModel, TimeStampedModel):
         DISPUTE_OPENED = "marketplace.dispute_opened", "Dispute opened"
         DISPUTE_EVIDENCE_ADDED = "marketplace.dispute_evidence_added", "Dispute evidence added"
         DISPUTE_RESOLVED = "marketplace.dispute_resolved", "Dispute resolved"
+        POLICY_VERSION_CREATED = "legal.policy_version_created", "Policy version created"
+        POLICY_SUBMITTED = "legal.policy_submitted", "Policy submitted for review"
+        POLICY_APPROVED = "legal.policy_approved", "Policy approved"
+        POLICY_PUBLISHED = "legal.policy_published", "Policy published"
+        POLICY_ARCHIVED = "legal.policy_archived", "Policy archived"
+        POLICY_SUPERSEDED = "legal.policy_superseded", "Policy superseded"
+        CONSENT_RECORDED = "legal.consent_recorded", "Policy consent recorded"
+        CONSENT_WITHDRAWN = "legal.consent_withdrawn", "Policy consent withdrawn"
+        PRIVACY_REQUEST_OPENED = "legal.privacy_request_opened", "Privacy request opened"
+        PRIVACY_REQUEST_UPDATED = (
+            "legal.privacy_request_updated",
+            "Privacy request updated",
+        )
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,

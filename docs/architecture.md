@@ -345,3 +345,22 @@ Rules enforced in `apps/logbook/services.py`:
   direct URL cannot bypass the UI gate; the API remains the authority.
   **Outstanding:** the Flutter mobile client.
 - **M7:** per README milestones.
+
+- **M9a (done):** `apps.legal` — Policies & Legal Center backend. `Policy`
+  (stable slug, category, linked `related_policies`) plus `PolicyVersion`
+  texts carrying their own lifecycle (`draft` → `pending_review` →
+  `approved` → `published` → `superseded`/`archived`), an explicit EN↔FR
+  `translation_of` link, effective/review dates and version numbers unique
+  per language with one published version per (policy, language) enforced
+  at the DB level. Public reads (`/legal/policies/`, `/legal/policies/<slug>/
+  ?lang=…`, version history) always resolve the *published* text — a draft
+  can never leak into a published slot. `PolicyConsent` records the exact
+  accepted version (+ context and optional withdrawal, never deleted) and
+  registration now requires the current published Terms version (validated
+  server-side, consent recorded with the account, atomic). Privacy requests
+  (access/export/deletion/correction) with user-opened + admin-review
+  workflow. Admin lifecycle endpoints (create draft, submit-review, approve,
+  publish with automatic supersede, archive) restricted to platform admins;
+  every transition audited (`legal.*`). Seed command `seed_legal` publishes
+  the six bilingual policy texts v1.0 with operator placeholders; 21 new
+  tests (370 total). **Web & mobile UI follow in M9b/M9c.**
