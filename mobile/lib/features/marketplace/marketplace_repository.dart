@@ -1,6 +1,7 @@
 import '../../core/api_client.dart';
 import '../../core/app_session.dart';
 import 'product.dart';
+import 'subscription.dart';
 
 /// Buyer-side marketplace data access.
 class MarketplaceRepository {
@@ -105,6 +106,23 @@ class MarketplaceRepository {
 
   Future<Payment> payment(String id) async =>
       Payment.fromJson(_m(await _client.getJson('marketplace/payments/$id/')));
+
+  // ── Seller subscription ──────────────────────────────────────────────
+  Future<SubscriptionStatus> subscriptionStatus() async => SubscriptionStatus
+      .fromJson(_m(await _client.getJson('marketplace/subscription/')));
+
+  /// Starts a subscription checkout; returns the pending payment to wait for.
+  Future<SubscriptionPayment> subscriptionCheckout(String plan) async =>
+      SubscriptionPayment.fromJson(_m(await _client.postJson(
+        'marketplace/subscription/checkout/',
+        body: {'plan': plan},
+      )));
+
+  /// Owner-only route: subscription payments are invisible to everyone else.
+  Future<SubscriptionPayment> subscriptionPayment(String id) async =>
+      SubscriptionPayment.fromJson(
+        _m(await _client.getJson('marketplace/subscription/payments/$id/')),
+      );
 
   Future<Order> requestRefund(String orderId, String reason) async =>
       Order.fromJson(_m(

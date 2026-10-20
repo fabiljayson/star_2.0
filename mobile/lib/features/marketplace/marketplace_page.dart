@@ -8,6 +8,7 @@ import '../../widgets/common.dart';
 import 'cart_page.dart';
 import 'marketplace_repository.dart';
 import 'product.dart';
+import 'subscription_page.dart';
 import 'product_detail_page.dart';
 
 /// Catalog + cart entry point (buyer experience).
@@ -33,17 +34,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Marketplace'),
-        actions: [
-          IconButton(
-            tooltip: 'Cart',
-            icon: const Icon(Icons.shopping_cart_outlined),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const CartPage()),
-              );
-            },
-          ),
-        ],
+        actions: _supplierMarketplaceActions(context),
       ),
       body: Column(
         children: [
@@ -61,6 +52,36 @@ class _MarketplacePageState extends State<MarketplacePage> {
         ],
       ),
     );
+  }
+
+  /// Suppliers get an entry to the seller subscription screen — the paywall
+  /// for selling rights is enforced by the server, this is only a shortcut.
+  List<Widget> _supplierMarketplaceActions(BuildContext context) {
+    final session = context.read<AppSession>();
+    final user = session.user;
+    final isSupplier =
+        user != null && user.roleNames.contains('supplier');
+    return [
+      if (isSupplier)
+        IconButton(
+          tooltip: 'Seller plan',
+          icon: const Icon(Icons.storefront_outlined),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SubscriptionPage()),
+            );
+          },
+        ),
+      IconButton(
+        tooltip: 'Cart',
+        icon: const Icon(Icons.shopping_cart_outlined),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const CartPage()),
+          );
+        },
+      ),
+    ];
   }
 }
 
