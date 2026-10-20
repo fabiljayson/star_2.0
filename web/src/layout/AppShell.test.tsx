@@ -103,6 +103,7 @@ describe('AppShell', () => {
       '/training',
       '/notifications',
       '/marketplace',
+      '/marketplace/subscription',
       '/reports',
       '/supplier',
       '/institution',

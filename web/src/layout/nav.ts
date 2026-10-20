@@ -27,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/training', label: 'Training', icon: '◆', roles: CLINICAL_ROLES },
   { to: '/notifications', label: 'Notifications', icon: '☰' },
   { to: '/marketplace', label: 'Marketplace', icon: '▤' },
+  { to: '/marketplace/subscription', label: 'Seller plan', icon: '★', roles: ['supplier'] },
   { to: '/reports', label: 'Reports', icon: '⤓' },
   { to: '/supplier', label: 'Supplier', icon: '▦', roles: ['supplier'] },
   {

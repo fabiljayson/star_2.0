@@ -9,10 +9,19 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { Modal } from '../../components/Modal'
 import { Spinner } from '../../components/Spinner'
+import { SubscriptionPaywallModal } from '../../components/SubscriptionPaywallModal'
+import { isSubscriptionRequiredError } from '../../lib/subscription'
 import { ApiError, apiFetch } from '../../lib/api'
 import { formatDateTime, formatMoney } from '../../lib/format'
 import { statusMeta } from '../../lib/status'
-import type { Order, Page, Product, ProductCategory, SupplierProfileValue } from '../../lib/types'
+import type {
+  Order,
+  Page,
+  Product,
+  ProductCategory,
+  SubscriptionStatusPayload,
+  SupplierProfileValue,
+} from '../../lib/types'
 
 type Tab = 'profile' | 'products' | 'orders'
 
@@ -325,6 +334,22 @@ function ProductsPanel({
   const [editDescription, setEditDescription] = useState('')
   const [editPublished, setEditPublished] = useState(false)
   const [restockQuantity, setRestockQuantity] = useState('10')
+  const [paywallOpen, setPaywallOpen] = useState(false)
+
+  const subscriptionQuery = useQuery({
+    queryKey: ['mp-subscription-status'],
+    queryFn: () => apiFetch<SubscriptionStatusPayload>('/marketplace/subscription/'),
+    retry: false,
+  })
+  const subscriptionActive = subscriptionQuery.data?.can_publish === true
+
+  function handlePublishError(error: unknown, fallback: string): void {
+    if (isSubscriptionRequiredError(error)) {
+      setPaywallOpen(true)
+      return
+    }
+    onError(error, fallback)
+  }
 
   const categoriesQuery = useQuery({
     queryKey: ['mp-categories'],
@@ -338,6 +363,7 @@ function ProductsPanel({
 
   const categories = categoriesQuery.data ?? []
   const products = productsQuery.data?.results ?? []
+  const subscriptionPlans = subscriptionQuery.data?.plans ?? []
 
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: ['mp-supplier-products'] })
@@ -368,7 +394,7 @@ function ProductsPanel({
       invalidate()
       onSaved('Product listed. Platform approval may still be required before it is public.')
     },
-    onError: (error) => onError(error, 'Could not create the product.'),
+    onError: (error) => handlePublishError(error, 'Could not create the product.'),
   })
 
   const updateMutation = useMutation({
@@ -382,7 +408,7 @@ function ProductsPanel({
       invalidate()
       onSaved('Product updated.')
     },
-    onError: (error) => onError(error, 'Could not update the product.'),
+    onError: (error) => handlePublishError(error, 'Could not update the product.'),
   })
 
   const restockMutation = useMutation({
@@ -420,6 +446,25 @@ function ProductsPanel({
 
   return (
     <div className="account-grid">
+      <SubscriptionPaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        plans={subscriptionPlans}
+      />
+      {!subscriptionActive && (
+        <Card title="Listing visibility">
+          <div className="badge-row">
+            <Badge tone="warning">Seller subscription inactive</Badge>
+            <Link to="/marketplace/subscription" className="btn btn--secondary btn--sm">
+              Manage subscription
+            </Link>
+          </div>
+          <p className="field__hint">
+            Publishing is paused. Existing listings are kept but hidden from
+            public buyers until the subscription is renewed.
+          </p>
+        </Card>
+      )}
       <Card title="Your listings">
         {productsQuery.isPending ? (
           <div className="page-loading" role="status">
@@ -447,10 +492,20 @@ function ProductsPanel({
                   </span>
                 </div>
                 <div className="badge-row">
-                  <Badge tone={product.is_active ? (product.is_published ? 'success' : 'warning') : 'neutral'}>
+                  <Badge
+                    tone={
+                      product.is_active && product.is_published
+                        ? subscriptionActive
+                          ? 'success'
+                          : 'warning'
+                        : 'neutral'
+                    }
+                  >
                     {product.is_active
                       ? product.is_published
-                        ? 'Published'
+                        ? subscriptionActive
+                          ? 'Published'
+                          : 'Hidden by subscription'
                         : 'Unpublished'
                       : 'Inactive'}
                   </Badge>

@@ -25,6 +25,7 @@ const ProcedureDetailPage = lazy(() => import('./pages/logbook/ProcedureDetailPa
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const CatalogPage = lazy(() => import('./pages/marketplace/CatalogPage').then((m) => ({ default: m.CatalogPage })))
 const ProductDetailPage = lazy(() => import('./pages/marketplace/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage })))
+const SubscriptionPage = lazy(() => import('./pages/marketplace/SubscriptionPage').then((m) => ({ default: m.SubscriptionPage })))
 const CartPage = lazy(() => import('./pages/marketplace/CartPage').then((m) => ({ default: m.CartPage })))
 const OrdersPage = lazy(() => import('./pages/marketplace/OrdersPage').then((m) => ({ default: m.OrdersPage })))
 const OrderDetailPage = lazy(() => import('./pages/marketplace/OrderDetailPage').then((m) => ({ default: m.OrderDetailPage })))
@@ -161,6 +162,7 @@ export default function App() {
           <Route path="/logbook/:id" element={<ProcedureDetailPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/marketplace" element={<CatalogPage />} />
+          <Route path="/marketplace/subscription" element={<SubscriptionPage />} />
           <Route path="/marketplace/products/:id" element={<ProductDetailPage />} />
           <Route path="/marketplace/cart" element={<CartPage />} />
           <Route path="/marketplace/orders" element={<OrdersPage />} />

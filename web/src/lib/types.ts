@@ -430,6 +430,63 @@ export type SupplierProfileValue = {
   created_at?: string
 }
 
+// ── Seller subscription (M8) ──
+export type SubscriptionPlanValue = 'monthly' | 'semiannual' | 'annual'
+
+export type SubscriptionPlanOption = {
+  plan: SubscriptionPlanValue
+  price_fcfa: number
+  duration_months: number
+}
+
+export type SubscriptionStatusValue =
+  | 'none'
+  | 'pending'
+  | 'active'
+  | 'renewed'
+  | 'expired'
+  | 'cancelled'
+  | 'failed'
+
+export type SubscriptionStatusPayload = {
+  status: SubscriptionStatusValue
+  plan: SubscriptionPlanValue | null
+  amount_fcfa: number
+  currency: string
+  starts_at: string | null
+  expires_at: string | null
+  server_now: string
+  can_publish: boolean
+  remaining_seconds: number
+  renewal_available: boolean
+  visibility_policy: string
+  plans: SubscriptionPlanOption[]
+}
+
+export type SubscriptionPayment = {
+  id: string
+  subscription: string | null
+  subscription_detail?: {
+    id: string
+    reference: string
+    plan: SubscriptionPlanValue
+    status: SubscriptionStatusValue
+    amount: string
+    currency: string
+    starts_at: string | null
+    expires_at: string | null
+    created_at: string
+  }
+  provider: string
+  status: 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'refunded'
+  amount: string
+  currency: string
+  provider_reference: string | null
+  failure_reason: string
+  paid_at: string | null
+  created_at: string
+}
+
 // ── Training ──
 export type PlacementStatusValue = 'active' | 'completed' | 'cancelled'
 
