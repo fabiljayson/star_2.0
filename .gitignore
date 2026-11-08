@@ -39,3 +39,5 @@ mobile/.packages
 
 # ── Local volumes ──
 .pgdata/
+.vercel
+.env*

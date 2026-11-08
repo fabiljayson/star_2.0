@@ -26,8 +26,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 
-# Sandbox payments must never settle in production, regardless of environment.
-PAYMENTS_ACCEPT_MOCK = False  # noqa: F405
+# Sandbox payments default OFF in production (hardening test enforces it).
+# Demo deployments may opt in with PAYMENTS_ACCEPT_MOCK=true; the variable
+# must be set explicitly, it can never turn itself on.
+PAYMENTS_ACCEPT_MOCK = env_bool("PAYMENTS_ACCEPT_MOCK", False)  # noqa: F405
 
 # Operational logs never include clinical payloads; see docs/security.md.
 LOGGING["loggers"]["django"]["level"] = "WARNING"  # noqa: F405

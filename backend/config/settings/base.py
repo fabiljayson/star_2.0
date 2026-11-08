@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 from dotenv import load_dotenv
 
@@ -101,6 +102,28 @@ ASGI_APPLICATION = "config.asgi.application"
 
 
 # ── Database ───────────────────────────────────────────────────────────
+def _database_from_url(url: str) -> dict:
+    """Parse DATABASE_URL (set by Vercel database integrations, e.g. Neon)."""
+    parsed = urlparse(url)
+    config = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(parsed.path.lstrip("/")),
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": parsed.hostname or "",
+        "PORT": str(parsed.port or 5432),
+        "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
+    }
+    options = {}
+    query = parse_qs(parsed.query)
+    for key in ("sslmode", "channel_binding"):
+        if query.get(key):
+            options[key] = query[key][0]
+    if options:
+        config["OPTIONS"] = options
+    return config
+
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -112,6 +135,9 @@ DATABASES = {
         "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
     }
 }
+
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {"default": _database_from_url(os.environ["DATABASE_URL"])}
 
 
 # ── Auth ───────────────────────────────────────────────────────────────

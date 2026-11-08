@@ -4,8 +4,6 @@ import csv
 import html
 import io
 
-import weasyprint
-
 from .models import ReportFormat
 
 # Characters that spreadsheet apps treat as the start of a formula.
@@ -44,6 +42,10 @@ tr:nth-child(even) td { background: #fafafa; }
 
 
 def render_pdf(title: str, subtitle: str, headers: list[str], rows: list[list]) -> bytes:
+    # Imported lazily: weasyprint eagerly dlopens Pango/HarfBuzz at import time,
+    # which would crash the whole app at boot on hosts without those system libs.
+    import weasyprint
+
     safe_title = html.escape(title)
     safe_subtitle = html.escape(subtitle)
     head = "".join(f"<th>{html.escape(str(h))}</th>" for h in headers)

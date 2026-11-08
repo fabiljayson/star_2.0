@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "django",
+      "buildCommand": "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_legal && python manage.py seed_showcase"
+    },
+    "web": {
+      "root": "web",
+      "framework": "vite",
+      "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+      ]
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": { "service": "backend" } },
+    { "source": "/static/(.*)", "destination": { "service": "backend" } },
+    { "source": "/admin(.*)", "destination": { "service": "backend" } },
+    { "source": "/(.*)", "destination": { "service": "web" } }
+  ]
+}
