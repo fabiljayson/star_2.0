@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -115,6 +115,16 @@ export function AccountPage() {
               ))}
             </ul>
           )}
+        </Card>
+
+        <Card title="Consents & privacy">
+          <p className="field__hint">
+            Review what you accepted, withdraw a consent or open a privacy
+            request.
+          </p>
+          <Link to="/account/consents" className="btn btn--secondary btn--sm">
+            Consents &amp; privacy
+          </Link>
         </Card>
 
         <Card title="Session">

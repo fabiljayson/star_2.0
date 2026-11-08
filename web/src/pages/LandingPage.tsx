@@ -216,6 +216,9 @@ export function LandingPage() {
           <p className="landing-footer__tagline">
             Secure Surgical Tracking, Assessment &amp; Resources
           </p>
+          <nav className="landing-footer__links" aria-label="Legal pages">
+            <Link to="/legal">Policies &amp; Legal Center</Link>
+          </nav>
           <p className="landing-footer__copy">© 2026 STAR. All rights reserved.</p>
         </div>
       </footer>

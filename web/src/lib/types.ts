@@ -635,3 +635,106 @@ export type PlacementProgress = {
   competency_progress: { competency_code: string; level: string | null }[]
   placement_completion: number
 }
+
+// ── Policies & Legal Center (Milestone 9) ──
+export type PolicyLanguage = 'en' | 'fr'
+
+export type PolicyPublishedVersion = {
+  id: string
+  language: PolicyLanguage
+  version: string
+  status: string
+  published_at: string | null
+  effective_date: string | null
+}
+
+export type PolicyListItem = {
+  id: string
+  slug: string
+  title: string
+  category: string
+  summary: string
+  published_versions: PolicyPublishedVersion[]
+}
+
+export type PolicyDetail = {
+  id: string
+  policy_slug: string
+  policy_summary: string
+  language: PolicyLanguage
+  version: string
+  status: string
+  title: string
+  body: string
+  effective_date: string | null
+  published_at: string | null
+  last_reviewed_at: string | null
+  translation_of: { id: string; language: PolicyLanguage; version: string } | null
+  related?: { slug: string; title: string }[]
+}
+
+export type PolicyVersionHistoryItem = {
+  id: string
+  language: PolicyLanguage
+  version: string
+  status: string
+  published_at: string | null
+  effective_date: string | null
+  last_reviewed_at: string | null
+}
+
+export type ConsentContextValue =
+  | 'registration'
+  | 'account'
+  | 'marketplace'
+  | 'subscription'
+  | 'clinical'
+  | 'mobile'
+
+export type ConsentRecord = {
+  id: string
+  policy_slug: string
+  policy_title: string
+  version: string
+  context: ConsentContextValue
+  withdrawn_at: string | null
+  withdrawn_reason: string
+  created_at: string
+}
+
+export type ConsentStatusItem = {
+  policy: string
+  title: string
+  current_version: string
+  consent_current: boolean
+  latest_withdrawn_at: string | null
+}
+
+export type PrivacyRequestItem = {
+  id: string
+  kind: 'access' | 'export' | 'deletion' | 'correction' | 'other'
+  kind_label: string
+  status: 'open' | 'in_review' | 'completed' | 'rejected'
+  response_note: string
+  handled_at: string | null
+  created_at: string
+}
+
+export type AdminPrivacyRequestItem = PrivacyRequestItem & {
+  user_email: string
+  message: string
+}
+
+export type AdminPolicyVersion = {
+  id: string
+  policy_slug: string
+  language: PolicyLanguage
+  version: string
+  status: string
+  title: string
+  body: string
+  effective_date: string | null
+  published_at: string | null
+  approved_by_email: string | null
+  review_note: string
+}

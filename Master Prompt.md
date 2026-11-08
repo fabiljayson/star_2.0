@@ -1,1076 +1,1203 @@
-# MASTER IMPLEMENTATION PROMPT — STAR
-## Secure Surgical Tracking, Assessment & Resources Platform
+# STAR — Complete Policies & Legal Center Implementation Prompt
 
-### 1. YOUR ROLE
+## 1. Role and mission
 
-Act as a senior full-stack software architect, Django backend engineer, Flutter developer, UI/UX designer, database architect, cybersecurity engineer, QA engineer, and DevOps engineer.
+Act as a senior full-stack software engineer, software architect, application security engineer, privacy-conscious product designer, and technical documentation specialist.
 
-Your mission is to **fully design, implement, test, document, and prepare STAR for deployment** as a production-oriented surgical logbook, training management, reporting, and surgical equipment marketplace platform.
+Your mission is to design and implement a complete **Policies & Legal Center** within the existing STAR platform.
 
-Do not deliver only a prototype, static dashboard, incomplete scaffold, design mockup, or collection of disconnected screens.
+STAR is a surgical documentation, education, and medical equipment marketplace platform with this existing technology stack:
 
-Build a coherent application with functional navigation, persistent database storage, validated business logic, secure APIs, meaningful error handling, automated tests, and complete setup documentation.
+- **Backend:** Django and Django REST Framework.
+- **Database:** PostgreSQL.
+- **Web frontend:** React and Vite.
+- **Mobile application:** Flutter and Dart.
+- **Authentication:** Reuse the existing authentication and authorization system.
+- **Application name:** STAR.
+- **Brand colors:** Navy `#1E2B58` and bronze `#C68B29`.
+- **Languages:** English and French.
+- **Environment:** Development and student demonstration using synthetic data only.
 
-**Official project name: STAR**
+Implement six complete policy categories:
 
-STAR is a professional digital platform for documenting surgical procedures, tracking clinical training experience, managing assessments, generating reports, and purchasing surgical equipment from verified suppliers.
+1. Privacy Policy.
+2. Terms of Service.
+3. Marketplace & Seller Policy.
+4. Subscription, Payment & Refund Policy.
+5. Clinical Data & Professional Responsibility Policy.
+6. Cookie & Data Retention Policy.
 
-Use STAR consistently throughout the application, documentation, metadata, branding, configuration, and user-facing interface.
+Create complete initial policy drafts in both languages, clearly marked as drafts requiring review and approval by qualified legal professionals before production publication.
 
-Do not use SurgiLog as the product name.
+The result must be a functional, integrated feature—not merely static pages, placeholder components, or a UI prototype.
 
----
-
-### 2. INITIAL REPOSITORY INSPECTION
-
-Before modifying anything, inspect the existing repository and understand its current state.
-
-1. Identify the programming languages, frameworks, directory structure, existing modules, dependencies, database configuration, environment variables, tests, and documentation.
-2. Determine whether the repository already contains a Django backend, Flutter application, web frontend, or existing implementation.
-3. Read the README, project requirements, design specifications, configuration files, and relevant source files.
-4. Identify existing functionality that can be preserved or improved.
-5. Detect incomplete features, security issues, duplicated code, broken integrations, and architectural inconsistencies.
-6. Check available development tools and installed framework versions.
-7. Identify missing requirements and document assumptions.
-
-Do not overwrite or delete existing working functionality without a clear justification.
-
-If the repository is empty, create a complete project structure.
-
-If the repository already contains code, adapt the implementation to its existing conventions wherever reasonable.
-
-### 3. EXECUTION STRATEGY
-
-Work in the following sequence:
-
-**Phase A — Discovery and planning**
-- Inspect the repository.
-- Create an implementation plan.
-- Define the architecture, data model, security boundaries, and development milestones.
-- Identify dependencies and unresolved decisions.
-- Present a concise plan before substantial modifications when working interactively.
-
-**Phase B — Architecture and foundations**
-- Establish the project structure.
-- Configure the database and environment management.
-- Implement authentication, authorization, common API conventions, error handling, and audit infrastructure.
-- Create database migrations and development fixtures.
-
-**Phase C — Core application**
-- Implement the surgical logbook.
-- Implement voice and text entry.
-- Implement users, institutions, training placements, examiners, assessments, reports, and attachments.
-
-**Phase D — Marketplace**
-- Implement suppliers, product catalogs, inventory, carts, orders, payments, refunds, shipments, and disputes.
-
-**Phase E — User interfaces**
-- Implement every required screen and connect it to real backend functionality.
-- Ensure web and mobile interfaces handle loading, empty, success, validation, and error states.
-
-**Phase F — Verification and delivery**
-- Run migrations, automated tests, static checks, and available build commands.
-- Fix discovered failures rather than merely documenting them.
-- Verify critical workflows end to end.
-- Complete documentation and deployment configuration.
-
-Do not stop after generating a plan or scaffolding. Continue implementation through the available milestones. If credentials or external services are unavailable, complete the integration boundary and a safe development implementation, document the limitation, and continue with the remaining work.
+Do not replace the existing STAR application, introduce an unnecessary new architecture, or break existing functionality.
 
 ---
 
-### 4. PRODUCT VISION
+## 2. Mandatory execution workflow
 
-STAR must support three connected business domains:
+### Phase 0 — Repository audit and planning
 
-1. **Surgical documentation:** record procedures, participants, observations, notes, and permitted attachments.
-2. **Clinical education and reporting:** manage trainees, placements, competencies, evaluations, examiner reviews, and reports.
-3. **Surgical equipment marketplace:** enable verified suppliers to list equipment and authorized buyers to place and track orders.
+Before changing any files, inspect the actual repository.
 
-These domains must share a consistent authentication and authorization system while maintaining strict separation between medical information and commercial data.
+Identify:
 
-STAR is a documentation and education platform. It must not independently diagnose patients, prescribe treatment, or replace an institution's official medical record system.
+- Django apps, settings modules, URL configurations, models, serializers, views, permissions, and migrations.
+- The configured Django user model and authentication system.
+- Existing user registration, login, logout, and account settings flows.
+- Existing React/Vite routes, layouts, components, styling, localization, API client, and state management.
+- Existing Flutter navigation, screens, theme, localization, API services, and state management.
+- PostgreSQL configuration and existing database migration conventions.
+- Existing notification, audit logging, consent, analytics, cookie, or policy implementations.
+- Existing marketplace subscription and payment flows.
+- Existing clinical documentation and access-control boundaries.
+- Existing tests, fixtures, development commands, deployment configuration, and documentation.
+- Existing accessibility and responsive-design conventions.
 
----
+Search for duplicate functionality before implementing anything.
 
-### 5. REQUIRED TECHNOLOGY STACK
+Produce an audit report containing:
 
-Use the following architecture unless repository constraints justify a documented alternative.
+1. Current architecture and relevant file paths.
+2. Existing features that can be reused.
+3. Missing capabilities.
+4. Potential migration and compatibility risks.
+5. Proposed data model and API changes.
+6. Proposed React/Vite and Flutter changes.
+7. Proposed policy-drafting and translation strategy.
+8. Security, privacy, and legal-review considerations.
+9. Implementation phases.
+10. Acceptance criteria and test strategy.
 
-#### Backend
-- Python
-- Django
-- Django REST Framework
-- PostgreSQL
-- Django ORM and migrations
-- Token-based or session-based authentication appropriate to each client
-- OpenAPI documentation, preferably generated with a maintained DRF-compatible package
-- Redis and Celery when asynchronous processing is necessary
-- A private object-storage service for images and attachments
+**STOP after presenting the audit and implementation plan. Wait for explicit user confirmation before modifying files.**
 
-#### Mobile application
-- Flutter
-- Dart
-- A maintainable architecture separating presentation, application state, domain logic, and data access
-- A consistent routing strategy
-- Typed API models and centralized API error handling
-- Secure token storage and protected local drafts
+Do not make code changes during this first phase. Once confirmation is received, proceed with implementation without repeatedly requesting approval for every ordinary development step.
 
-#### Web application
-Inspect the repository before choosing the web strategy.
+### Phase 1 — Implementation
 
-Prefer an architecture that provides:
-- Responsive dashboards and data tables.
-- Accessible forms and keyboard navigation.
-- Efficient administration and reporting workflows.
-- A consistent design language with the mobile application.
+After confirmation:
 
-Choose Flutter Web if an existing Flutter codebase and its requirements justify sharing the interface. Otherwise, consider a dedicated responsive web frontend while retaining Flutter for mobile.
+- Implement the backend, database migrations, policy content, web interface, mobile interface, consent workflows, tests, and documentation.
+- Preserve existing functionality and follow the actual repository conventions.
+- Reuse existing authentication, API services, design systems, and localization infrastructure.
+- Do not create duplicate user models or unrelated services.
+- Do not delete historical user, clinical, marketplace, subscription, or payment data.
+- Keep a record of implementation decisions and any deviations from the approved plan.
 
-Do not create unnecessary duplicate applications or introduce additional frameworks without a clear reason.
+### Phase 2 — Verification
 
-#### Engineering standards
-- Use supported, compatible dependency versions.
-- Pin or constrain dependencies appropriately.
-- Separate development, testing, staging, and production configuration.
-- Never commit credentials, private keys, payment secrets, or real patient data.
-- Use environment variables and provide a complete `.env.example`.
-- Add automated quality checks and CI configuration where practical.
+Run the relevant backend, frontend, mobile, migration, security, accessibility, and regression tests.
+
+Inspect the final changes and report precisely what is complete, what has been tested, what still requires configuration, and what requires legal approval.
 
 ---
 
-### 6. USER ROLES AND AUTHORIZATION
+## 3. Standard 22-point software project checklist
 
-Implement a flexible role-based and institution-scoped permission system.
+Apply all 22 requirements to this feature.
 
-Required roles:
+### Planning and architecture
 
-1. Independent surgeon.
-2. Trainee or medical resident.
-3. Supervising surgeon.
-4. Examiner.
-5. Department or service manager.
-6. Institution administrator.
-7. Verified equipment supplier.
-8. Authorized equipment buyer.
-9. Platform administrator.
+**1. Repository and architecture audit**
 
-Users may have multiple roles and affiliations.
+Inspect the real project before modifying files. Identify dependencies, reusable components, integration points, constraints, and risks.
 
-Implement the following requirements:
+**2. Requirements, implementation plan, and acceptance criteria**
 
-- Every protected operation must be authorized on the backend.
-- Permissions must consider the user, role, institution, resource ownership, and resource status.
-- Users must not gain access to another institution's private records merely by changing a URL or API identifier.
-- Suppliers must never access surgical records.
-- Platform administrators must not receive unrestricted medical-content access by default.
-- Sensitive administrative access must be justified, restricted, and auditable.
-- Disabled accounts must lose access according to the session-revocation policy.
-- Use secure password hashing and appropriate account recovery.
-- Support stronger authentication for privileged accounts.
-- Avoid using a professional or academic registration number as the sole authentication credential.
+Document functional requirements, nonfunctional requirements, API contracts, data model decisions, implementation phases, and measurable completion criteria. Obtain confirmation after the initial audit.
 
-Create automated authorization tests for both permitted and denied operations.
+**3. Preserve existing functionality and architecture**
+
+Extend the existing STAR implementation. Preserve authentication, user accounts, marketplace subscriptions, clinical workflows, navigation, and unrelated features. Avoid unnecessary rewrites and breaking API changes.
+
+### Features and user experience
+
+**4. Complete functionality and edge cases**
+
+Implement all six policy categories, bilingual content, policy versioning, consent collection, historical consent records, policy updates, acknowledgment workflows, and relevant account settings.
+
+**5. Responsive design and accessibility**
+
+Support desktop, tablet, and mobile layouts. Implement semantic HTML, keyboard navigation, visible focus indicators, accessible forms, readable typography, sufficient contrast, screen-reader labels, accessible dialogs, and appropriate loading, empty, error, and offline states.
+
+**6. Maintainable architecture and type safety**
+
+Use maintainable Django models, serializers, services, permissions, React components, typed interfaces where available, and appropriately structured Flutter models and services. Avoid duplicated business logic.
+
+### Engineering and data
+
+**7. Database integrity and migrations**
+
+Create reversible or carefully documented Django migrations. Add appropriate indexes, constraints, foreign keys, uniqueness rules, and transaction boundaries. Preserve historical records and document backup and recovery considerations.
+
+**8. API contracts and integration**
+
+Implement documented, validated, authenticated API endpoints where required. Reuse existing API conventions, return consistent error responses, and maintain compatibility with both web and mobile clients.
+
+**9. Authentication and authorization**
+
+Enforce permissions on the backend. Users may read public policies, but only authorized users may create, approve, publish, archive, or supersede policy versions. Protect personal consent history and administrative actions.
+
+### Security, privacy, and legal safeguards
+
+**10. Privacy Policy**
+
+Provide a comprehensive draft describing the actual data STAR collects, purposes, access, sharing, retention, security, user rights, and privacy request procedures.
+
+**11. Confidentiality and clinical information protection**
+
+Provide clear confidentiality safeguards for surgical logbooks, pseudonymized patient information, attachments, assessments, and institutional information. Avoid unnecessary collection or disclosure of clinical data.
+
+**12. Terms of Service, consent, and data rights**
+
+Require explicit acceptance of the applicable Terms of Service during registration. Record the exact accepted version, timestamp, and user reference. Support policy history, withdrawal or account requests where appropriate, and renewed acceptance when required.
+
+**13. Secure configuration and secrets management**
+
+Use environment variables for sensitive configuration. Never expose secrets in frontend bundles, mobile applications, logs, fixtures, or committed environment files. Validate production security settings.
+
+### Quality assurance
+
+**14. Automated tests**
+
+Implement backend unit tests, API tests, permission tests, policy-version tests, consent tests, frontend tests, and Flutter tests following existing project conventions.
+
+**15. Regression testing**
+
+Verify that registration, login, logout, account management, clinical workflows, marketplace purchases, seller subscriptions, and other existing features continue to work.
+
+### Production readiness
+
+**16. CI/CD and deployment readiness**
+
+Update build and deployment configuration only when necessary. Ensure migrations, static assets, environment variables, and production settings are documented. Do not deploy or publish draft policies as approved legal documents.
+
+**17. Monitoring and audit logging**
+
+Record important policy administration, publication, acceptance, reacceptance, and consent-withdrawal events. Protect logs against tampering and prevent unnecessary exposure of personal information.
+
+**18. Performance and scalability**
+
+Use pagination where needed, avoid N+1 queries, cache only safe public content, invalidate caches on publication changes, and keep user-specific consent information private.
+
+**19. Documentation**
+
+Document the data model, API endpoints, policy lifecycle, bilingual content management, consent requirements, configuration, migrations, test commands, deployment, and legal-review workflow.
+
+**20. Dependency and cost management**
+
+Reuse existing dependencies whenever possible. Avoid unnecessary paid services, duplicate packages, or infrastructure. Keep the student demonstration compatible with the existing deployment architecture.
+
+### Application safeguards and completion
+
+**21. Appropriate safeguards for AI or automated content**
+
+If AI is used to draft, translate, summarize, classify, or update policies, treat its output as unapproved draft content. Require authorized human review before publication. Do not automatically publish generated legal text or claim that AI output is legally validated.
+
+**22. Honest final verification and delivery**
+
+Run the relevant tests, inspect changes, report exact results, document incomplete features and limitations, and identify remaining configuration and legal-review requirements. Never claim a feature was tested, deployed, legally reviewed, or completed if it was not.
 
 ---
 
-### 7. SURGICAL LOGBOOK MODULE
+## 4. Policy Center information architecture
 
-Implement a complete intervention management workflow.
+Create a dedicated, discoverable **Policies & Legal Center** accessible from:
 
-Each surgical record should support, where applicable:
+- The website footer.
+- The web application's account settings.
+- The Flutter application's settings.
+- Registration and authentication screens.
+- Relevant marketplace subscription and checkout screens.
+- Relevant clinical documentation workflows.
+- Any existing help or support section, where appropriate.
 
-- Unique record reference.
-- Procedure date and relevant timestamps.
-- Institution and department.
-- Surgical specialty.
-- Procedure category or name.
-- Pseudonymized patient reference.
-- Authorized participating professionals.
-- Participant roles: primary operator, assistant, or observer.
-- Preoperative indication and diagnosis where appropriate.
-- Procedure summary and relevant operative details.
-- Complications and postoperative information when available and authorized.
-- Training objectives or competency links.
-- Attachments and images.
-- Author and creation metadata.
-- Review and validation history.
-- Versioned notes and modification history.
+Use the existing router and navigation patterns.
 
-Allow users to create drafts, edit authorized records, search, filter, and submit records for review.
+### Required pages
 
-Provide filters for date range, institution, specialty, participant role, record status, and other authorized fields.
+Implement the following:
 
-Never expose inaccessible records through search results, autocomplete, pagination, exports, or API error messages.
+1. Policies & Legal Center overview.
+2. Individual policy detail page.
+3. Policy version history.
+4. Current policy status and effective date.
+5. Policy acceptance and acknowledgment interface.
+6. User's consent history.
+7. Privacy request information and available request workflow.
+8. Authorized administrative policy management interface.
+9. Draft-review and publication workflow.
+10. English/French language switcher.
 
-#### Record lifecycle
+Each policy detail page should support:
 
-Implement explicit state transitions:
+- Clear title and category.
+- Language indicator.
+- Draft, pending review, approved, or published status.
+- Version identifier.
+- Publication date.
+- Effective date.
+- Last reviewed date.
+- Next review date, where configured.
+- A structured table of contents.
+- Navigable headings.
+- Readable policy sections.
+- Links to related policies.
+- Print-friendly layout.
+- An accessible way to return to the Policy Center.
+- A clear notice when the document is an unapproved draft.
+
+Never present a draft as an approved or binding policy.
+
+---
+
+## 5. Policy content requirements
+
+Generate six complete initial policy drafts in English and French.
+
+Use a consistent structure, terminology, version metadata, and translation workflow. Store the English and French versions as explicitly related translations of the same logical policy whenever they have equivalent meaning.
+
+Use neutral, professional language suitable for a medical-technology platform and a Cameroon-oriented marketplace, while avoiding unsupported assumptions about the operator's legal identity, establishment, jurisdiction, or compliance status.
+
+Do not invent a company registration number, physical address, legal representative, privacy officer, payment provider, legal certification, or contractual guarantee.
+
+Use clearly identified placeholders for information that must be supplied by the platform operator.
+
+### 5.1 Privacy Policy
+
+The draft must address:
+
+- Who operates STAR, using a placeholder for the legal entity and contact details.
+- The distinction between account data, clinical logbook data, marketplace data, subscription records, payment references, support communications, technical logs, and optional analytics.
+- Data categories collected and whether each is required or optional.
+- Purposes and applicable legal bases, to be confirmed by qualified counsel.
+- Account creation and authentication.
+- Surgical logbooks and pseudonymized patient information.
+- Marketplace listings, orders, and seller subscriptions.
+- Payment processing and external providers.
+- Hosting, storage, service providers, and potential data transfers.
+- Access controls and authorized institutional or supervisory access.
+- Security measures and their limitations.
+- Retention criteria and deletion practices.
+- User access, correction, objection, deletion, or other applicable rights.
+- Account closure and its effect on retained records.
+- Data incident handling.
+- Contact details for privacy requests.
+- Policy updates and effective dates.
+
+Do not claim that pseudonymization makes clinical data anonymous. Explain that pseudonymized information may remain personal data.
+
+Do not claim a specific legal basis or cross-border transfer mechanism without review.
+
+### 5.2 Terms of Service
+
+Address:
+
+- Eligibility and account responsibilities.
+- Account security and accurate information.
+- Acceptable use and prohibited conduct.
+- Intellectual property and content ownership.
+- User-submitted stories, text, images, and marketplace content.
+- Clinical and educational limitations.
+- Platform availability and service interruptions.
+- Suspension and termination.
+- Subscription-related access limitations.
+- Marketplace transaction responsibilities.
+- Third-party services.
+- Complaints and dispute procedures.
+- Liability limitations, subject to applicable law and legal review.
+- Amendments and material policy changes.
+- Contact details and effective dates.
+
+Do not invent legally enforceable waivers or claim that STAR eliminates professional liability.
+
+### 5.3 Marketplace & Seller Policy
+
+Address:
+
+- The unified user account model.
+- The ability of all eligible users to browse and purchase equipment.
+- The requirement for an active seller subscription before publishing listings.
+- Seller identity and verification requirements, where implemented.
+- Accurate descriptions, prices, stock, condition, and images.
+- Prohibited or restricted listings.
+- Medical equipment safety and lawful sale requirements.
+- Authenticity, recalls, expiry dates, and condition disclosures where relevant.
+- Listing moderation and removal.
+- Subscription expiration and automatic public hiding of existing listings.
+- Preservation of hidden listings in the owner's private account.
+- Reactivation of eligible listings after verified renewal.
+- Order processing, shipping, delivery, returns, and disputes.
+- Responsibilities of buyers and sellers.
+- Reporting suspicious or prohibited listings.
+- Marketplace limitations and contact procedures.
+
+Do not invent a seller verification process that the software does not implement.
+
+Clearly distinguish the platform's role from the role of equipment sellers, buyers, payment processors, carriers, and other third parties.
+
+### 5.4 Subscription, Payment & Refund Policy
+
+Use the existing STAR business rule:
+
+- Monthly seller subscription price: **10,000 FCFA**.
+- Currency code: `XAF`.
+- Duration: one calendar month.
+- Active subscription required to publish equipment listings.
+- All eligible users can buy without being required to subscribe as sellers.
+- Expiration hides existing listings from public discovery but does not delete them.
+- Renewal restores eligible listings after payment verification.
+
+Address:
+
+- Subscription eligibility.
+- Pricing and applicable charges.
+- Checkout initiation.
+- Payment provider responsibilities.
+- Payment pending, success, failure, cancellation, and verification delays.
+- Subscription activation.
+- Start and expiration dates.
+- Calendar-month calculation.
+- Renewal behavior.
+- Automatic renewal only if genuinely implemented and appropriately authorized.
+- Cancellation.
+- Refund requests and applicable conditions.
+- Duplicate payments and reconciliation.
+- Disputed transactions.
+- Failed renewals.
+- Subscription expiration.
+- Access to existing orders after expiration.
+- Payment support and complaint channels.
+
+Do not invent a blanket no-refund policy or promise refunds without an approved business and legal decision.
+
+Use placeholders for provider-specific payment methods, settlement timing, fees, and refund processing times until these are confirmed.
+
+The document must match the actual application implementation.
+
+### 5.5 Clinical Data & Professional Responsibility Policy
+
+Address:
+
+- Permitted use of surgical logbooks and training records.
+- Confidentiality and access restrictions.
+- Data minimization and pseudonymization.
+- Avoiding unnecessary direct patient identifiers.
+- Institutional rules and professional confidentiality.
+- Authorized supervisors, examiners, and institutional personnel.
+- Educational and assessment purposes.
+- Secure handling of clinical attachments.
+- Restrictions on unauthorized disclosure or publication.
+- User responsibility for the accuracy of submitted records.
+- Review and correction workflows where implemented.
+- The distinction between educational documentation and official medical records.
+- The limitations of automated or AI-assisted content.
+- Professional judgment and responsibility.
+- Reporting suspected privacy or security incidents.
+- Retention and deletion considerations.
+
+Explicitly state in the draft that STAR is not a substitute for official medical records, clinical judgment, professional supervision, or institutional procedures.
+
+Do not claim that a platform's pseudonymization alone guarantees compliance or removes confidentiality obligations.
+
+Do not encourage users to upload identifiable patient records to a student demonstration environment.
+
+### 5.6 Cookie & Data Retention Policy
+
+Address:
+
+- Essential cookies and session storage, if used.
+- Authentication tokens and session expiration.
+- Optional analytics and tracking technologies, if implemented.
+- Third-party embeds or integrations, if present.
+- User choices and consent behavior where applicable.
+- Browser and mobile storage distinctions.
+- Data retention categories and criteria.
+- Account and clinical record retention considerations.
+- Marketplace orders, payments, and financial record retention.
+- Security logs and audit events.
+- Backup retention and eventual deletion.
+- Legal holds or mandatory retention requirements, subject to legal review.
+- Account deletion requests.
+- Exceptions to deletion.
+- Retention review and disposal procedures.
+
+Audit the actual application before describing cookies, analytics, tracking, or local storage. Do not claim that STAR uses or does not use a technology without verifying the implementation.
+
+Where retention periods have not been determined, use explicit policy placeholders and create an administrative configuration or documented decision point rather than inventing durations.
+
+---
+
+## 6. Bilingual content and localization
+
+Implement both English and French.
+
+Requirements:
+
+- English and French drafts for all six policies.
+- Consistent section identifiers across translated documents.
+- Consistent legal and technical terminology.
+- Language selection that works in both React/Vite and Flutter.
+- Language preference integration with existing STAR localization.
+- Clearly linked translations and version relationships.
+- Translation review status.
+- Identification of the authoritative version or language, to be confirmed by legal review.
+- Correct handling of accents, punctuation, dates, and typography.
+- Accessible language-switching controls.
+
+Do not automatically treat two translations as legally identical without review.
+
+If one translation changes materially, require review and a documented publication decision.
+
+Store language codes consistently, for example `en` and `fr`.
+
+If existing localization files are used, integrate into those files rather than creating a separate incompatible localization system.
+
+---
+
+## 7. Policy versioning and lifecycle
+
+Implement a real policy versioning system.
+
+Each logical policy must support multiple immutable versions.
+
+Include appropriate fields such as:
+
+- Policy category.
+- Language.
+- Version identifier.
+- Title.
+- Structured policy content.
+- Draft status.
+- Review status.
+- Publication status.
+- Effective date.
+- Publication timestamp.
+- Creation and update timestamps.
+- Author or creator reference.
+- Reviewer reference.
+- Approver reference.
+- Approval timestamp.
+- Review notes or reason for revision.
+- Link to the corresponding translated version.
+- Superseded-version reference, if appropriate.
+- Content checksum or other integrity mechanism where justified.
+
+Adapt the schema to the existing codebase. Avoid adding unnecessary fields that duplicate existing audit infrastructure.
+
+### Required lifecycle
+
+Support transitions such as:
+
+`Draft → Pending Review → Approved → Published → Superseded`
+
+A draft must not be publicly presented as an approved current policy.
+
+Only explicitly authorized users may approve or publish policies.
+
+Published versions must be immutable. Corrections should create a new version rather than silently altering historical text.
+
+Record the actor, timestamp, and relevant version for approval and publication events.
+
+Allow the administrator to configure effective dates and review dates.
+
+Prevent publication of a translation that has not completed the required review workflow.
+
+Use appropriate database transactions and constraints to avoid two simultaneously active versions of the same policy and language when the business rule requires a single current version.
+
+---
+
+## 8. Explicit consent and acknowledgment
+
+### Registration requirements
+
+Require explicit acceptance of the applicable Terms of Service during registration.
+
+Provide separate, clearly worded links to the Terms of Service and Privacy Policy.
+
+The Terms checkbox must:
+
+- Be unchecked by default.
+- Require an affirmative user action.
+- Not be bundled with unrelated marketing consent.
+- Identify the applicable Terms version.
+- Be keyboard accessible.
+- Be available in English and French.
+- Display validation feedback if the user attempts to register without accepting.
+
+Record at minimum:
+
+- User reference.
+- Policy reference.
+- Exact policy version.
+- Language shown to the user.
+- Acceptance timestamp.
+- Consent or acceptance action.
+- Relevant request or audit correlation reference, where appropriate.
+
+Store acceptance on the server. Never trust a frontend-only boolean as the authoritative consent record.
+
+Use an appropriate database model with uniqueness constraints or event semantics consistent with the audit requirements.
+
+### Privacy Policy acknowledgment
+
+Provide an explicit acknowledgment mechanism where required by the approved product and legal design.
+
+Do not automatically represent reading or acknowledging the Privacy Policy as consent to every processing activity.
+
+Where consent is required for a specific optional purpose, record that purpose separately and support its withdrawal where applicable.
+
+### Policy updates
+
+When a new version is published:
+
+- Determine whether the change is material.
+- Identify users who must accept the new Terms version.
+- Show a clear notice and the relevant new version.
+- Record acceptance of the new version.
+- Preserve all previous acceptance records.
+- Avoid collecting duplicate acceptance records for repeated identical submissions.
+- Do not retroactively change the content of historical acceptance records.
+
+Where renewed acceptance is required, block only the relevant gated actions until acceptance, subject to the approved legal and operational policy. Preserve access to essential account functions and appropriate ways to review the policy or contact support.
+
+Do not automatically log users out or delete accounts simply because a policy version changed.
+
+### Consent history
+
+Allow users to review their own acceptance history, including policy name, version, language, and timestamp.
+
+Do not allow users to modify historical acceptance events.
+
+Support an appropriately authorized administrative view for audit purposes, with minimal disclosure of personal information.
+
+---
+
+## 9. Privacy requests and account rights
+
+Implement a documented and appropriately secured workflow for privacy-related requests.
+
+Depending on the existing application architecture, support requests such as:
+
+- Access to personal data.
+- Correction of account information.
+- Account closure.
+- Data deletion requests.
+- Consent withdrawal where applicable.
+- Questions about retention.
+- Complaints or privacy concerns.
+
+Do not automatically delete records that must be retained for legitimate operational or legal reasons. Instead, record the request, assess applicable retention rules, and document the outcome.
+
+Ensure request status is visible to the requesting user where a request-management interface is implemented.
+
+Use authorization checks so users can access only their own requests.
+
+Do not claim that every record can be deleted immediately or that every request has a fixed legal deadline without qualified review.
+
+---
+
+## 10. Backend implementation
+
+Implement the feature using Django REST Framework and PostgreSQL.
+
+### Models
+
+Design and implement appropriate models for:
+
+1. Logical policy.
+2. Policy version.
+3. Policy approval or publication event, if existing audit models do not already cover it.
+4. Policy acceptance and acknowledgment records.
+5. Consent-purpose records, if optional processing consent is applicable.
+6. Privacy requests.
+7. Relevant audit events, reusing existing infrastructure wherever possible.
+
+Use the configured Django user model through `settings.AUTH_USER_MODEL`.
+
+Add appropriate constraints, indexes, related names, validation, and deletion policies.
+
+Keep historical policy versions and consent events intact.
+
+Do not store sensitive clinical details inside consent records or general-purpose logs.
+
+### Serializers and validation
+
+Implement serializers that:
+
+- Expose only appropriate fields.
+- Validate policy status transitions.
+- Prevent clients from setting approval or publication status without authorization.
+- Reject invalid language codes and version relationships.
+- Validate acceptance against the correct published version.
+- Prevent users from submitting acceptance for another user.
+- Validate privacy requests and allowed state transitions.
+
+### Services
+
+Use a service layer where appropriate for:
+
+- Policy publication.
+- Policy version supersession.
+- Translation relationships.
+- Consent recording.
+- Current-policy lookup.
+- Reacceptance requirements.
+- Privacy request lifecycle.
+- Audit-event creation.
+
+Use transactions for operations that must update multiple records consistently.
+
+### Permissions
+
+Implement role-based permissions using the existing STAR authorization system.
+
+Users may:
+
+- Read public published policies.
+- Read their own consent history.
+- Submit their own privacy requests.
+- Update or cancel their own requests only according to the approved workflow.
+
+Authorized policy administrators may:
+
+- Create drafts.
+- Edit drafts.
+- Submit versions for review.
+- Approve versions.
+- Publish approved versions.
+- Supersede versions.
+- View policy administration audit records.
+
+Reviewers and approvers must not receive permissions simply because they are authenticated users.
+
+If the current application does not have policy administration roles, implement the smallest compatible permission extension and document how administrators are assigned.
+
+Prevent unauthorized publication through direct API requests.
+
+### API endpoints
+
+Follow existing route conventions. Implement equivalent functionality to the following where appropriate:
+
+Public endpoints:
+
+- `GET /api/v1/policies/`
+- `GET /api/v1/policies/current/`
+- `GET /api/v1/policies/{slug}/`
+- `GET /api/v1/policies/{slug}/versions/`
+- `GET /api/v1/policies/{slug}/versions/{version}/`
+
+Authenticated endpoints:
+
+- `GET /api/v1/me/policy-acceptances/`
+- `POST /api/v1/me/policy-acceptances/`
+- `GET /api/v1/me/privacy-requests/`
+- `POST /api/v1/me/privacy-requests/`
+- `GET /api/v1/me/privacy-requests/{id}/`
+- Additional request-management endpoints where justified.
+
+Administrative endpoints:
+
+- Create and edit drafts.
+- Submit a version for review.
+- Approve or reject a version.
+- Publish a reviewed version.
+- Supersede an existing version.
+- View publication history.
+- Manage translation relationships.
+- Review privacy requests.
+- View authorized audit history.
+
+These are suggested paths, not a requirement to duplicate existing routes. Reuse current API conventions and avoid redundant endpoints.
+
+### API response behavior
+
+Provide consistent response schemas and errors.
+
+For example, a current-policy response may include:
+
+- Policy identifier.
+- Slug.
+- Category.
+- Language.
+- Version.
+- Status.
+- Effective date.
+- Publication date.
+- Content.
+- Translation relationship.
+- Whether the authenticated user must accept a new Terms version.
+
+A user-specific response may additionally indicate whether the current Terms version has been accepted.
+
+Never expose unpublished drafts through public endpoints.
+
+Do not expose other users' acceptance records or privacy requests.
+
+Document the API using the existing OpenAPI or API documentation approach, if present.
+
+---
+
+## 11. React/Vite implementation
+
+Build a complete, polished Policies & Legal Center using the existing STAR design system.
+
+Use:
+
+- Navy `#1E2B58`.
+- Bronze `#C68B29`.
+- Existing typography, spacing, buttons, cards, form controls, and layout components.
+- Existing routing, API client, localization, and state-management conventions.
+
+Do not introduce gradients, decorative elements, or an unrelated design language if these conflict with the existing STAR UI.
+
+### Required screens and components
+
+Implement:
+
+1. Policies & Legal Center landing page.
+2. Policy category cards.
+3. Policy detail page.
+4. Policy table of contents.
+5. English/French language switcher.
+6. Policy version history.
+7. Draft and review status indicators.
+8. Registration Terms acceptance checkbox.
+9. Privacy acknowledgment or optional-consent controls where applicable.
+10. Consent history page.
+11. Privacy request form and status page.
+12. Policy update notification.
+13. Reacceptance screen or modal.
+14. Administrative policy editor.
+15. Policy preview.
+16. Review and approval workflow screens.
+17. Publication confirmation dialog.
+18. Appropriate empty, loading, success, offline, and error states.
+
+### Policy detail UX
+
+Display the policy title, category, language, version, effective date, status, and structured content.
+
+Include a table of contents with accessible anchor links.
+
+Keep long-form content readable and responsive.
+
+Distinguish drafts from published policies using both text and visual indicators, not color alone.
+
+Provide a print-friendly presentation without leaking private account data.
+
+### Registration integration
+
+Integrate the required Terms checkbox into the existing registration flow.
+
+Do not create a duplicate registration form.
+
+The checkbox must be unchecked by default.
+
+Prevent submission until the required Terms version is explicitly accepted.
+
+Submit the exact policy version or another validated version reference to the backend. The backend must resolve and validate the current required version.
+
+Display errors accessibly and preserve the user's other valid form inputs after an error.
+
+### Reacceptance UX
+
+When a material Terms update requires renewed acceptance:
+
+- Explain that the Terms have changed.
+- Link to the exact new version.
+- Clearly identify the version and effective date.
+- Provide affirmative acceptance.
+- Record the acceptance through the backend.
+- Handle failed submissions and network interruptions.
+- Do not mark acceptance complete optimistically before the server confirms it.
+
+### Admin UX
+
+Authorized administrators must be able to create drafts, preview English and French versions, manage translations, submit for review, approve, publish, and view historical versions.
+
+Require confirmation for publication and supersession actions.
+
+Do not permit a normal user to access administrative components merely by navigating to their URLs.
+
+---
+
+## 12. Flutter implementation
+
+Integrate the Policies & Legal Center into the existing Flutter application.
+
+Inspect the current navigation, theme, authentication, API services, state management, localization, and form conventions before implementing screens.
+
+Implement equivalent mobile experiences:
+
+- Policy Center.
+- Policy category list.
+- Policy detail.
+- Language switcher.
+- Version history.
+- Registration Terms acceptance.
+- Consent history.
+- Privacy request submission and status.
+- Policy update notification.
+- Required reacceptance workflow.
+
+Use the same backend policy versions and consent records as the web application.
+
+Do not implement a separate mobile-only consent database.
+
+Ensure that acceptance is confirmed by the server before the application considers it recorded.
+
+Use the existing state-management system, such as Riverpod or Bloc, if already established. Do not replace the current architecture.
+
+Support:
+
+- Loading states.
+- Network failures.
+- Retry actions.
+- Offline policy reading where safely supported.
+- Clear identification of stale offline policy content.
+- Accessible touch targets.
+- Screen readers.
+- Appropriate navigation and back behavior.
+- English and French localization.
+
+Never permit offline acceptance to be treated as authoritative until successfully submitted and confirmed by the backend.
+
+If the application has an administrative mobile workflow, reuse it only where appropriate. Do not expose privileged policy administration to ordinary mobile users.
+
+---
+
+## 13. Security, privacy, and audit trail
+
+Implement defense in depth.
+
+### Security requirements
+
+- Authenticate all private API requests.
+- Enforce object-level authorization.
+- Validate policy state transitions server-side.
+- Keep published policy versions immutable.
+- Validate acceptance against a currently required version.
+- Prevent users from forging another user's acceptance.
+- Prevent clients from setting approval, publication, or audit timestamps.
+- Protect administrative routes and APIs.
+- Rate-limit sensitive request endpoints where appropriate.
+- Validate and sanitize user-supplied text.
+- Avoid rendering policy HTML unsafely.
+- Protect against cross-site scripting.
+- Use appropriate CSRF protection if session authentication is used.
+- Keep secrets out of frontend builds, mobile binaries, logs, and Git.
+- Avoid logging request bodies that contain unnecessary personal information.
+- Ensure privacy request records are accessible only to authorized users and administrators.
+- Do not include patient identifiers in policy analytics or audit logs.
+
+### Audit requirements
+
+Record relevant events, including:
+
+- Policy draft creation.
+- Draft edits where auditability is required.
+- Submission for review.
+- Approval and rejection.
+- Publication.
+- Supersession.
+- User acceptance of Terms.
+- Relevant consent-purpose changes.
+- Consent withdrawal where applicable.
+- Privacy request creation and status transitions.
+- Authorized administrative access to sensitive request details, where appropriate.
+
+Each audit event should capture the minimum necessary information, such as actor reference, action, timestamp, affected resource, and a correlation identifier.
+
+Do not log secrets or unnecessary clinical details.
+
+Protect audit records against ordinary user modification. Reuse an existing audit framework if available.
+
+Document audit retention and access controls.
+
+---
+
+## 14. Draft publication safeguards
+
+All six policies and their translations must begin in an unapproved draft state.
+
+The initial implementation must not publish them automatically.
+
+Implement explicit review controls and distinguish:
 
 - Draft.
-- Submitted.
-- Under review, if required.
+- Pending review.
 - Approved.
-- Returned for correction.
-- Archived, subject to retention rules.
+- Published.
+- Superseded.
+- Rejected, if supported.
 
-Define valid transitions and enforce them on the backend.
+A reviewer must be able to identify which language version they are reviewing.
 
-A rejected record must include a reason.
+Publication must require the necessary permissions and a documented approval event.
 
-A trainee must not approve their own record when independent approval is required.
+Where a policy is not approved, display a clear internal or demo notice that it is not approved for production use.
 
-Modifications after approval must create a traceable version or correction event and trigger re-review when appropriate.
+Do not imply that a draft becomes legally valid merely because an administrator clicked Publish. Publication is an application workflow, not a legal certification.
 
-Do not silently overwrite approved clinical or educational records.
-
-Avoid permanent deletion of records that must be retained for audit or institutional obligations.
-
----
-
-### 8. PATIENT PRIVACY AND PSEUDONYMIZATION
-
-The surgical logbook must use pseudonymized patient references instead of full patient names in ordinary workflows.
-
-Implement:
-
-- A patient-reference entity with a unique pseudonymous code within the appropriate institutional scope.
-- Separation between the pseudonymous reference and any re-identification mapping.
-- Strict access controls for any mapping that links the reference to an official hospital record.
-- Protection against accidental exposure of patient identifiers in notes, filenames, attachments, logs, exports, and voice transcripts.
-- A configurable data-retention policy.
-- Auditing of sensitive access.
-- Secure deletion or archival procedures when legally and institutionally permitted.
-
-Do not derive patient codes directly from names, phone numbers, birth dates, or other identifying information.
-
-Do not invent patient information.
-
-All seed and demo data must be synthetic and clearly identified as fictional.
-
-The application must not become a parallel official medical record system without explicit institutional authorization and a separate compliance review.
+For student demonstrations, use synthetic administrator accounts and clearly label sample policy content.
 
 ---
 
-### 9. VOICE DICTATION AND TEXT ENTRY
+## 15. Testing strategy
 
-Users must be able to document procedures by typing or dictating.
+Write automated tests following the existing repository's conventions.
 
-Implement a transcription provider abstraction so the platform can support a compatible local engine or an approved external provider.
+### Backend model and service tests
 
-Required workflow:
+Test:
 
-1. User starts dictation.
-2. The application records or captures speech according to the selected implementation.
-3. Audio is processed by the configured transcription service.
-4. The transcript appears in an editable field.
-5. The application clearly reports transcription failures or uncertainty when available.
-6. The user corrects and reviews the transcript.
-7. The user saves a draft or submits the record explicitly.
+- Policy creation.
+- Version relationships.
+- Language validation.
+- Draft immutability rules after publication.
+- Publication and supersession.
+- Effective dates.
+- Translation relationships.
+- Consent creation.
+- Consent uniqueness or idempotency.
+- Historical acceptance preservation.
+- Reacceptance after a required Terms update.
+- Privacy request state transitions.
+- Audit event creation.
 
-Requirements:
+### API and authorization tests
 
-- Support the languages actually selected for the project.
-- Handle permission denial, microphone errors, timeouts, network loss, and provider failure.
-- Do not assume that transcription is medically accurate.
-- Never automatically approve or submit a record because transcription has completed.
-- Do not retain raw audio indefinitely.
-- Provide a configurable audio-retention policy and clear user feedback.
-- Evaluate privacy and contractual conditions before sending clinical speech to an external provider.
-- Allow manual text entry if voice functionality is unavailable.
+Test:
 
-Provide a working development implementation or clearly isolated mock transcription adapter when real provider credentials are unavailable. Never present simulated transcription as a real external-service result.
+- Public users can read published policies.
+- Public users cannot read drafts.
+- Authenticated users can read their own consent history.
+- Users cannot access another user's acceptance records.
+- Users cannot access another user's privacy requests.
+- Unauthorized users cannot publish policies.
+- Authorized reviewers and approvers can perform their permitted actions.
+- The backend rejects forged acceptance timestamps and user references.
+- The backend rejects acceptance of an invalid or superseded version where it is no longer acceptable.
+- Required acceptance is enforced at registration.
+- API errors follow documented response conventions.
 
----
+### Frontend tests
 
-### 10. IMAGES AND ATTACHMENTS
+Test:
 
-Implement secure attachment handling.
+- Policy Center navigation.
+- English/French switching.
+- Policy detail rendering.
+- Draft and published status display.
+- Required Terms checkbox validation.
+- Registration submission behavior.
+- Policy update notifications.
+- Reacceptance workflow.
+- Consent history visibility.
+- Privacy request submission.
+- Loading, error, and empty states.
+- Keyboard accessibility and basic accessibility assertions.
 
-Required features:
-- Upload permitted image and document formats.
-- Enforce file-size limits and configurable file-type allowlists.
-- Validate file content instead of trusting filenames or declared MIME types.
-- Scan files where suitable scanning infrastructure is available.
-- Store files in private storage.
-- Use short-lived authorized download links where appropriate.
-- Prevent public access to clinical attachments.
-- Record uploader, timestamp, resource association, and applicable authorization metadata.
-- Apply a configurable retention policy.
-- Protect against path traversal, unsafe file processing, and malicious uploads.
-- Remove unnecessary metadata from images where appropriate and safe.
-- Avoid logging sensitive file contents or public URLs.
+### Flutter tests
 
-Do not claim that a file has been medically approved merely because it has been successfully uploaded.
+Test:
 
----
+- Policy screen rendering.
+- Language selection.
+- Terms checkbox behavior.
+- Required acceptance validation.
+- API acceptance submission.
+- Failure and retry handling.
+- Policy update notifications.
+- Consent history.
+- Privacy request submission.
+- Offline and stale-policy states.
+- Navigation and state restoration where applicable.
 
-### 11. TRAINING, PLACEMENTS, AND COMPETENCY ASSESSMENTS
+### Regression tests
 
-Implement the complete educational workflow.
+Confirm that:
 
-#### Training placements
-- Assign trainees to institutions, departments, supervisors, and training periods.
-- Track active, completed, and cancelled placements.
-- Support placement objectives and expected competencies.
-- Prevent invalid or contradictory assignments according to configured rules.
+- Registration still works after the required acceptance is supplied.
+- Login and logout remain functional.
+- Existing account settings continue to work.
+- Marketplace subscription and payment behavior remains intact.
+- Existing clinical documentation workflows are unaffected.
+- Existing user permissions remain correct.
+- Existing API contracts are preserved where required.
 
-#### Competencies
-- Maintain a configurable competency catalog.
-- Define evaluation criteria and rubric versions.
-- Associate competencies with procedures, placements, and assessments where appropriate.
-- Keep quantitative procedure counts separate from qualitative competency ratings.
+Run migrations against the development/test database and test the migration path with representative synthetic data.
 
-#### Examiner workflow
-- Assign authorized examiners to records or trainees.
-- Allow examiners to review authorized records.
-- Record scores, feedback, review decisions, and timestamps.
-- Support approval, rejection, and requests for correction.
-- Prevent unauthorized self-approval.
-- Preserve historical assessments when rubrics change.
-
-#### Progress tracking
-Display:
-- Procedures performed.
-- Procedures assisted.
-- Procedures observed.
-- Records awaiting review.
-- Approved and rejected records.
-- Competency progress.
-- Placement completion status.
-
-Do not automatically declare a trainee competent solely because a numerical procedure threshold has been reached.
+Do not use real patient information or production personal data in test fixtures.
 
 ---
 
-### 12. REPORTS AND EXPORTS
+## 16. Accessibility and usability
 
-Implement real reporting based on database records.
+Aim for WCAG 2.1 AA accessibility practices without claiming formal certification.
 
-Required reports:
-- Individual surgical logbook.
-- Activity by date range.
-- Activity by specialty and institution.
-- Procedures grouped by participation role.
-- Trainee progress report.
-- Competency assessment report.
-- Examiner review report.
-- Placement completion report.
-- Institution-level aggregated report.
-- Marketplace sales and order reports for authorized commercial users.
+Ensure:
 
-Support suitable PDF and CSV/XLSX exports.
+- Proper heading hierarchy.
+- Keyboard navigation.
+- Visible focus states.
+- Screen-reader labels.
+- Accessible dialogs and focus management.
+- Sufficient text contrast.
+- Responsive long-form reading.
+- Non-color indicators for statuses.
+- Clear language selection.
+- Plain-language policy summaries.
+- Consistent button labels.
+- Accessible validation messages.
+- Readable error notifications.
+- Appropriate touch targets in Flutter.
 
-Requirements:
-- Enforce permissions when generating and downloading reports.
-- Avoid exposing patient identifiers in ordinary reports.
-- Use aggregation or pseudonymization when detailed records are unnecessary.
-- Record the requester and generation status.
-- Handle large exports asynchronously where necessary.
-- Protect temporary export files and expire download links.
-- Prevent formula injection in CSV/XLSX exports.
-- Provide clear error states for failed report generation.
-
-Do not generate misleading statistics from missing or unapproved data.
+Do not replace the full policy with a short summary. A summary may supplement the complete document but must not misrepresent it.
 
 ---
 
-### 13. SURGICAL EQUIPMENT MARKETPLACE
+## 17. Documentation and configuration
 
-Implement a functional marketplace, not merely a product catalog.
+Update the existing documentation rather than creating redundant documentation files.
 
-#### Supplier management
-- Supplier registration and profile.
-- Business verification status.
-- Authorized product categories.
-- Supplier contact and commercial information.
-- Product listing approval.
-- Supplier suspension and complaint handling.
+Include:
 
-Do not allow suppliers to sell restricted or unapproved products without the required checks.
+- Policies & Legal Center overview.
+- Architecture and data model.
+- API endpoints and response contracts.
+- Policy lifecycle.
+- Bilingual content management.
+- Registration acceptance flow.
+- Consent and acknowledgment semantics.
+- Reacceptance rules.
+- Privacy request workflow.
+- Administrative permissions.
+- Audit logging.
+- Database migrations.
+- Environment configuration.
+- Development and test commands.
+- Deployment requirements.
+- Backup and recovery considerations.
+- Legal review and publication procedure.
 
-#### Product catalog
-Each product should support:
-- Name and description.
-- Category.
-- Supplier.
-- Product reference or SKU.
-- Price and currency.
-- Available quantity.
-- Product images.
-- Relevant specifications.
-- Applicable regulatory or conformity documentation where required.
-- Availability and publication status.
+Create or update `.env.example` only where appropriate.
 
-Do not invent regulatory approvals or certifications.
+Never overwrite real `.env` files or commit secrets.
 
-#### Inventory
-- Track available and reserved quantities where applicable.
-- Prevent overselling through appropriate database transactions and concurrency controls.
-- Record inventory changes.
-- Define stock-release rules for expired or cancelled reservations.
-- Do not permit negative inventory unless a deliberately approved business rule supports backorders.
+Use synthetic data exclusively for development fixtures and demonstration accounts.
 
-#### Shopping cart
-- Add, update, and remove items.
-- Validate quantities and product availability.
-- Calculate subtotals, taxes, shipping, discounts, and totals according to configured rules.
-- Display the currency explicitly.
-- Revalidate prices and inventory during checkout.
-
-#### Orders
-- Create unique order references.
-- Persist order-item snapshots of product descriptions, quantities, unit prices, currencies, and applicable charges.
-- Track order status.
-- Support cancellation where permitted.
-- Support multiple suppliers and shipments if the marketplace model requires them.
-- Maintain a complete order history.
-- Provide buyer and supplier views with appropriate permissions.
-
-#### Payment integration
-Implement a provider abstraction for payments.
-
-The system must support the lifecycle of payment initiation, pending status, verified success, failure, cancellation, refund, and reconciliation.
-
-Security requirements:
-- Never store full card numbers or card security codes.
-- Verify payment webhooks and provider signatures.
-- Use idempotency keys or equivalent mechanisms to prevent duplicate processing.
-- Match provider references, amounts, and currencies against the expected transaction.
-- Do not mark an order paid based solely on a browser redirect.
-- Do not trust client-submitted payment status.
-- Persist payment events for reconciliation.
-- Protect against duplicate refunds and invalid state transitions.
-- Define how inventory is reserved and released when payments fail or expire.
-
-If real payment credentials are unavailable, implement a clearly isolated sandbox or mock provider for automated tests and development only. Production must refuse to treat mock payment results as real money movement.
-
-Select the actual provider only after confirming its current availability in the target country, supported currencies, fees, merchant requirements, and seller payout capabilities.
-
-#### Shipping, refunds, and disputes
-- Record shipping address information only where necessary.
-- Support shipment references and tracking statuses.
-- Implement order cancellation rules.
-- Implement refund requests and refund status tracking.
-- Support disputes between buyers and suppliers.
-- Preserve evidence and status changes.
-- Define administrator intervention permissions.
-- Provide a clear audit trail for financial operations.
-
-Do not implement a fake payment integration that merely displays a successful checkout screen.
+Do not introduce paid services unless essential and explicitly documented.
 
 ---
 
-### 14. NOTIFICATIONS
+## 18. Legal review and compliance boundaries
 
-Implement notifications for:
-- Record submission.
-- Review assignment.
-- Approval or rejection.
-- Requested corrections.
-- Upcoming placement milestones where configured.
-- Competency review updates.
-- Order confirmation.
-- Payment status changes.
-- Shipment updates.
-- Refund and dispute updates.
+All policy content is an initial drafting aid, not legal advice.
 
-Support an in-app notification center.
+The implementation must not claim that STAR complies with any law, regulation, certification, or institutional requirement simply because the policies exist.
 
-Email and push notifications may be added through provider abstractions.
+Before production publication, qualified legal professionals must review:
 
-Do not include patient names, detailed clinical notes, payment secrets, or other sensitive information in notification previews.
+- The legal identity and jurisdiction of the platform operator.
+- Applicable privacy and data-protection obligations.
+- Clinical confidentiality and professional obligations.
+- Institutional and educational requirements.
+- International or cross-border data transfers.
+- Payment processing and consumer protection.
+- Marketplace rules for medical equipment.
+- Subscription, cancellation, refund, and dispute terms.
+- Cookie and analytics practices.
+- Retention and deletion periods.
+- Data-subject request procedures.
+- English and French legal consistency.
+- Required notices, disclosures, and user consent wording.
 
-Notifications must not be treated as the authoritative record of a payment or clinical approval.
+Use explicit placeholders for unconfirmed facts.
 
----
+Do not fabricate legal bases, retention durations, mandatory disclosure periods, addresses, or regulatory approval.
 
-### 15. REQUIRED APPLICATION SCREENS
-
-Implement all screens required for a complete user journey.
-
-#### Shared screens
-- Login.
-- Registration or invitation acceptance.
-- Password recovery.
-- Account verification where required.
-- Profile.
-- Security settings.
-- Notification center.
-- Access-denied page.
-- Not-found page.
-- Error and maintenance states.
-
-#### Surgical workspace
-- Dashboard.
-- Surgical logbook list.
-- Create intervention.
-- Edit draft.
-- Intervention details.
-- Voice dictation interface.
-- Attachment management.
-- Submission confirmation.
-- Review history.
-- Search and filtering.
-- Individual reports.
-
-#### Training workspace
-- Trainee directory.
-- Trainee profile.
-- Training placement list and details.
-- Supervisor assignments.
-- Competency catalog.
-- Assessment form.
-- Examiner review queue.
-- Assessment history.
-- Progress dashboard.
-- Placement completion report.
-
-#### Institution administration
-- Institution profile.
-- Department and specialty management.
-- User and membership management.
-- Role and permission management.
-- Examiner assignments.
-- Configurable review rules.
-- Institution-level reports.
-- Audit event viewer for authorized administrators.
-
-#### Marketplace
-- Marketplace home.
-- Product catalog.
-- Product details.
-- Category and search results.
-- Supplier profile.
-- Supplier verification status.
-- Cart.
-- Checkout.
-- Payment status.
-- Order confirmation.
-- Buyer order history.
-- Supplier dashboard.
-- Product management.
-- Inventory management.
-- Supplier order management.
-- Shipment management.
-- Refund requests.
-- Dispute management.
-
-#### Platform administration
-- System dashboard.
-- User and institution administration.
-- Supplier verification queue.
-- Product moderation.
-- Incident and complaint management.
-- Audit and operational monitoring.
-- System configuration.
-
-Do not create navigation items that lead to empty pages or buttons with no meaningful action.
-
-Every screen must have suitable loading, empty, success, validation, and failure states.
+The final documentation must identify every placeholder requiring operator input and every section requiring legal approval.
 
 ---
 
-### 16. UI/UX DESIGN REQUIREMENTS
+## 19. Definition of done
 
-Build STAR as a professional healthcare technology product.
+The feature is complete only when all applicable criteria are satisfied:
 
-Visual direction:
-- Clean, modern, restrained, and trustworthy.
-- Strong information hierarchy.
-- High readability for clinical documentation.
-- Consistent spacing, typography, and component behavior.
-- Responsive layouts for desktop, tablet, and mobile.
-- Accessible forms and understandable error messages.
-- Clear distinction between medical, educational, administrative, and commercial workspaces.
-- Consistent status indicators for drafts, pending reviews, approvals, failed payments, and shipments.
+1. The repository audit and implementation plan were presented and approved before code changes.
+2. All six policy categories exist as complete initial English and French drafts.
+3. Draft policies are not automatically published.
+4. Policy versions are stored and managed through a controlled lifecycle.
+5. Published versions are immutable.
+6. English and French versions are linked and their review status is tracked.
+7. Registration requires explicit Terms acceptance.
+8. Consent records contain the exact version, user reference, language, and server timestamp.
+9. Historical acceptance records remain available.
+10. Material Terms updates can trigger renewed acceptance.
+11. Users can review their own consent history.
+12. Privacy requests follow an authorized workflow.
+13. Administrative operations are protected by backend permissions.
+14. Audit events are generated for relevant actions.
+15. React/Vite includes the complete Policies & Legal Center.
+16. Flutter includes equivalent policy and consent experiences.
+17. Both clients use the same backend source of truth.
+18. The implementation is responsive and accessible.
+19. Migrations preserve existing data and existing functionality.
+20. Automated tests cover the critical business and security rules.
+21. Documentation and environment examples are updated.
+22. Remaining legal approvals, configuration, untested features, and limitations are clearly reported.
 
-Avoid:
-- Excessive gradients.
-- Decorative animations that distract from clinical tasks.
-- Overcrowded dashboards.
-- Unreadable data tables.
-- Fake statistics presented as real data.
-- Unnecessary animations during documentation.
-- Buttons without implemented actions.
-- Excessive modal dialogs for routine operations.
-
-Use reusable components, consistent design tokens, and accessible color contrast.
-
-Ensure keyboard navigation, visible focus states, descriptive labels, and screen-reader-compatible controls.
-
-If an existing design specification is provided, read and follow it. Do not invent a conflicting visual identity.
-
----
-
-### 17. DATA MODEL AND DATABASE DESIGN
-
-Design a normalized relational model using PostgreSQL.
-
-Include, at minimum, the following domain entities:
-
-Identity and organization:
-- User.
-- ProfessionalProfile.
-- Institution.
-- InstitutionMembership.
-- Department.
-- Specialty.
-
-Surgical documentation:
-- PatientReference.
-- SurgicalProcedure.
-- ProcedureParticipant.
-- ProcedureNoteVersion.
-- Attachment.
-- ClinicalConsentRecord or applicable authorization evidence.
-- ReviewDecision.
-- AuditEvent.
-
-Education:
-- TrainingPlacement.
-- Competency.
-- CompetencyRubricVersion.
-- Assessment.
-- ExaminerAssignment.
-
-Reporting:
-- ReportJob.
-- ExportArtifact, if required.
-
-Marketplace:
-- SupplierProfile.
-- ProductCategory.
-- Product.
-- Inventory.
-- InventoryMovement.
-- Cart.
-- CartItem.
-- Order.
-- OrderItem.
-- Payment.
-- PaymentEvent.
-- Refund.
-- Shipment.
-- Dispute.
-
-Supporting entities:
-- Notification.
-- NotificationPreference.
-- IdempotencyRecord where appropriate.
-
-Define:
-- Primary keys and foreign keys.
-- Unique constraints.
-- Indexes for common filters.
-- Appropriate decimal monetary fields.
-- Explicit currency codes.
-- Timestamps and timezone conventions.
-- Status enums and permitted transitions.
-- Soft deletion only where justified.
-- Retention and archival policies.
-- Database transaction boundaries.
-- Institution-scoped uniqueness where required.
-
-Do not duplicate authoritative information unnecessarily.
-
-Use immutable historical snapshots for confirmed order prices and other business facts that must not change retroactively.
-
-Do not put large attachment binaries directly into ordinary relational tables without a compelling documented reason.
-
-Create and maintain:
-1. An entity-relationship diagram.
-2. A documented data dictionary.
-3. Django models and migrations.
-4. A clear explanation of relationships and constraints.
+Do not mark the project complete merely because the screens render. Verify the database, API, consent behavior, authorization, and tests.
 
 ---
 
-### 18. API DESIGN
-
-Create a versioned REST API with consistent naming and behavior.
-
-Suggested endpoint groups:
-
-- `/api/v1/auth/`
-- `/api/v1/users/`
-- `/api/v1/institutions/`
-- `/api/v1/departments/`
-- `/api/v1/specialties/`
-- `/api/v1/patients/references/`
-- `/api/v1/procedures/`
-- `/api/v1/procedures/{id}/participants/`
-- `/api/v1/procedures/{id}/attachments/`
-- `/api/v1/procedures/{id}/submit/`
-- `/api/v1/procedures/{id}/reviews/`
-- `/api/v1/training/placements/`
-- `/api/v1/competencies/`
-- `/api/v1/assessments/`
-- `/api/v1/reports/`
-- `/api/v1/suppliers/`
-- `/api/v1/products/`
-- `/api/v1/cart/`
-- `/api/v1/orders/`
-- `/api/v1/payments/`
-- `/api/v1/refunds/`
-- `/api/v1/shipments/`
-- `/api/v1/disputes/`
-- `/api/v1/notifications/`
-- `/api/v1/audit/`
-
-These paths are suggestions. Adapt them to a consistent and maintainable API design.
-
-Implement:
-- Request validation.
-- Response serialization.
-- Pagination.
-- Filtering and search.
-- Appropriate status codes.
-- Consistent error responses.
-- Permission checks.
-- API documentation.
-- Rate limiting for sensitive endpoints.
-- Safe upload handling.
-- Authentication and token revocation policies.
-- Transaction-safe status transitions.
-- Idempotent payment event handling.
-
-Do not expose unrestricted Django model serialization.
-
-Document required fields, optional fields, validation constraints, authorization rules, and representative error responses.
-
----
-
-### 19. SECURITY ENGINEERING
-
-Treat security as a core product requirement.
-
-Implement and test:
-- Secure password hashing.
-- Backend-enforced permissions.
-- Institution-level data isolation.
-- Protection against insecure direct object references.
-- Input validation and output encoding.
-- CSRF protection where applicable.
-- Secure session and token handling.
-- Login and sensitive-operation rate limits.
-- Safe file uploads.
-- Secret management.
-- HTTPS deployment configuration.
-- CORS restrictions where relevant.
-- Database access controls.
-- Protected audit logs.
-- Dependency vulnerability checks where available.
-- Secure error messages.
-- Backup protection and restoration tests.
-- Secure handling of payment webhooks.
-- Protection against duplicate financial operations.
-- Safe handling of exported files.
-- Explicit privacy and retention controls.
-
-Never hardcode secrets.
-
-Do not log passwords, authentication tokens, payment credentials, raw clinical transcripts, or unnecessary patient identifiers.
-
-Use synthetic fixtures in development and automated tests.
-
-Do not claim that STAR is legally compliant or certified merely because technical controls exist. Require a separate review of applicable legal, institutional, and contractual obligations before production deployment.
-
----
-
-### 20. TESTING REQUIREMENTS
-
-Write real automated tests rather than relying only on manual inspection.
-
-#### Backend tests
-- Authentication and account permissions.
-- Institution-level isolation.
-- Surgical record creation and modification.
-- Record lifecycle transitions.
-- Version history and audit events.
-- Pseudonymous patient references.
-- Attachment authorization.
-- Training placements and examiner assignments.
-- Competency assessments.
-- Report permissions and exports.
-- Supplier verification.
-- Product availability and inventory concurrency.
-- Cart calculations.
-- Order creation.
-- Payment webhook verification.
-- Duplicate payment event handling.
-- Refund state transitions.
-- Shipment and dispute workflows.
-- Notification permissions.
-
-#### Frontend tests
-- Authentication flows.
-- Form validation.
-- Navigation.
-- Loading and error states.
-- Surgical record creation.
-- Voice-provider failure handling.
-- Examiner review flow.
-- Report generation requests.
-- Product browsing and cart behavior.
-- Checkout failure and success states.
-- Responsive layouts and accessibility basics.
-
-#### Integration and end-to-end tests
-At minimum, test these complete scenarios:
-
-**Scenario A — Surgical logbook**
-A surgeon signs in, creates a record, edits the draft, attaches an authorized file, submits it, and reviews its status.
-
-**Scenario B — Trainee assessment**
-A trainee submits an intervention. An authorized examiner reviews it, requests corrections, receives the revised record, and approves it. The audit history remains consistent.
-
-**Scenario C — Unauthorized access**
-A user attempts to access another institution's private record by changing a URL or API identifier. The request is denied and no sensitive content is disclosed.
-
-**Scenario D — Marketplace order**
-A buyer selects an available product, checks out, receives a pending payment status, and receives a confirmed status only after a verified payment event.
-
-**Scenario E — Duplicate payment notification**
-The same valid provider event is delivered twice. The system does not duplicate the financial effect or fulfill the order twice.
-
-**Scenario F — Failed payment**
-A payment fails or expires. The order and inventory follow the defined cancellation and stock-release policy.
-
-**Scenario G — Reporting**
-A user generates an authorized report and cannot export records outside their permitted scope.
-
-**Scenario H — Voice transcription failure**
-The transcription service becomes unavailable. The application reports the failure and allows the user to continue manually without losing the draft.
-
-Use isolated test databases and mocked external services. Never run financial tests against real payment accounts by default.
-
----
-
-### 21. DEVELOPMENT DATA AND DEMONSTRATION MODE
-
-Provide a safe and useful demonstration environment.
-
-Create:
-- Synthetic institutions.
-- Fictional professional accounts.
-- Fictional trainees and examiners.
-- Fictional surgical records.
-- Synthetic competency assessments.
-- Fictional suppliers and products.
-- Test orders and simulated payment events.
-
-All records must be clearly identified as demonstration data.
-
-Never include actual patient information, real hospital credentials, real payment credentials, or copied confidential records in fixtures.
-
-Document how to create an initial administrator account securely.
-
-Do not commit a universal production password.
-
----
-
-### 22. DOCUMENTATION DELIVERABLES
-
-Provide a complete documentation package.
-
-Required files should include, where appropriate:
-
-- `README.md` — project overview, features, architecture, prerequisites, installation, startup, testing, and troubleshooting.
-- `.env.example` — every required environment variable with safe placeholder values.
-- `docs/architecture.md` — architecture and technology decisions.
-- `docs/requirements.md` — functional and non-functional requirements.
-- `docs/business-rules.md` — lifecycle, validation, and marketplace rules.
-- `docs/data-dictionary.md` — entities, attributes, relationships, and constraints.
-- `docs/api.md` or generated OpenAPI documentation.
-- `docs/security.md` — threat considerations, access control, secret management, and security testing.
-- `docs/privacy-and-retention.md` — pseudonymization, retention, attachments, voice, and exports.
-- `docs/deployment.md` — staging and production deployment.
-- `docs/backup-and-recovery.md` — backup, restoration, and recovery procedures.
-- `docs/testing.md` — test commands and coverage.
-- `docs/decisions.md` — assumptions, unresolved decisions, and architecture decisions.
-- `docs/marketplace.md` — provider integration, order lifecycle, and payment reconciliation.
-- UML use-case and entity-relationship diagrams.
-
-Provide development and deployment instructions appropriate to the actual repository.
-
-Include migrations and a reproducible development setup.
-
-If Docker is appropriate, provide a development Docker Compose configuration with safe defaults, health checks where practical, and documented service dependencies.
-
-Never place production secrets in Docker files or example configuration.
-
----
-
-### 23. DEPLOYMENT AND OPERATIONS
-
-Prepare the project for deployment without pretending that deployment has already occurred.
-
-Provide:
-- Environment-specific settings.
-- Database migration instructions.
-- Static and uploaded file handling.
-- HTTPS and trusted-host configuration.
-- Production-safe debug settings.
-- Secure secret configuration.
-- Health and readiness checks.
-- Structured application logging.
-- Error monitoring integration points.
-- Backup scheduling guidance.
-- Database and file restoration instructions.
-- Dependency update procedures.
-- Deployment and rollback instructions.
-- Worker and scheduler configuration where required.
-
-Separate medical application logs from operational metrics and avoid including unnecessary sensitive information.
-
-The deployment plan must explicitly identify the intended data-hosting location and the legal, institutional, and contractual review required for that choice.
-
----
-
-### 24. PERFORMANCE AND RELIABILITY
-
-Optimize the system for real workloads rather than synthetic demonstrations.
-
-Implement:
-- Database indexes for common filters.
-- Pagination on potentially large lists.
-- Appropriate query optimization.
-- Transaction-safe inventory and payment operations.
-- Background jobs for expensive reports.
-- Timeouts and retries for external services.
-- Bounded retry behavior for payment integrations.
-- Clear synchronization states on mobile.
-- Conflict handling for offline drafts.
-- Monitoring for failed background jobs.
-- Resource limits for file uploads and exports.
-
-Do not introduce caching that risks exposing one user's private records to another user.
-
-Define and test performance targets after the expected number of users, institutions, and concurrent requests has been established.
-
----
-
-### 25. PRIORITIZED IMPLEMENTATION MILESTONES
-
-Build the application in the following order.
-
-**Milestone 1 — Project foundations**
-- Repository structure.
-- Database configuration.
-- Authentication.
-- User profiles and roles.
-- Institutions and memberships.
-- Core security and audit infrastructure.
-- Development environment and CI.
-
-**Milestone 2 — Surgical documentation**
-- Surgical records.
-- Participant assignments.
-- Text entry.
-- Record versioning and lifecycle.
-- Attachments.
-- Search and filtering.
-
-**Milestone 3 — Voice and education**
-- Transcription adapter.
-- Trainee placements.
-- Supervisors and examiners.
-- Competency catalog.
-- Assessment workflow.
-- Notifications.
-
-**Milestone 4 — Reporting**
-- Dashboards.
-- Individual reports.
-- Institutional aggregates.
-- PDF and CSV/XLSX exports.
-- Export security.
-
-**Milestone 5 — Marketplace**
-- Supplier verification.
-- Products and inventory.
-- Cart and checkout.
-- Orders and payment abstraction.
-- Refunds and shipments.
-- Disputes and reconciliation.
-
-**Milestone 6 — Complete interfaces**
-- Implement all web and mobile screens.
-- Connect every form and action to the backend.
-- Add responsive layouts and accessible states.
-- Verify navigation and authorization behavior.
-
-**Milestone 7 — Quality and delivery**
-- Automated tests.
-- Security checks.
-- Database migration verification.
-- Performance testing.
-- Deployment documentation.
-- Final acceptance report.
-
-Do not sacrifice critical security or data integrity to make a milestone appear complete.
-
-If time or execution limits prevent full completion, finish the most important end-to-end workflows first and document precisely what remains unfinished.
-
----
-
-### 26. DEFINITION OF DONE
-
-STAR is not considered complete merely because the application starts.
-
-A feature is complete only when:
-- Its database model and migration exist where required.
-- Its backend logic is implemented.
-- Its permissions are enforced on the server.
-- Its UI is connected to real application state and APIs.
-- Its loading, empty, success, and error states work.
-- Its business rules are enforced.
-- Its tests pass.
-- Its documentation is updated.
-- Its implementation does not expose secrets or real patient data.
-- Its functionality has been verified in the appropriate environment.
-
-The overall project is ready for a controlled pilot when:
-- The principal surgical documentation workflow works end to end.
-- Trainee and examiner workflows work.
-- Reports respect permissions.
-- Marketplace orders and payment state transitions are verified in a sandbox.
-- Critical security tests pass.
-- Backup restoration has been demonstrated.
-- All required environment variables are documented.
-- Known limitations and unresolved legal or institutional decisions are clearly recorded.
-
-Do not describe a feature as completed when only its UI or endpoint placeholder exists.
-
-Do not claim production readiness without evidence.
-
----
-
-### 27. FINAL EXECUTION INSTRUCTIONS
-
-Start by inspecting the repository and identifying the actual state of the project.
-
-Then:
-1. Summarize the existing architecture.
-2. Identify gaps relative to this specification.
-3. Produce a prioritized implementation plan.
-4. Define the core data model and security boundaries.
-5. Implement the application incrementally.
-6. Run migrations, tests, static checks, and available build commands.
-7. Fix discovered issues.
-8. Update the documentation.
-9. Provide a final implementation report.
-
-The final report must distinguish:
-- Features fully implemented and tested.
-- Features implemented but not fully verified.
-- Features requiring external credentials or third-party approval.
-- Remaining defects.
-- Remaining legal, institutional, or operational decisions.
-- Exact commands for running, testing, and deploying the project.
-
-Be transparent about failures and limitations.
-
-Use sensible defaults for reversible decisions, but never invent legal approval, successful payments, medical validation, external provider availability, or production deployment.
-
-**Your ultimate objective is to deliver STAR as a coherent, secure, maintainable, tested, and deployable surgical logbook and marketplace platform—not merely a demonstration of what the platform might look like.**
+## 20. Final delivery report
+
+After implementation and verification, provide a concise but comprehensive report with:
+
+### A. Repository findings
+- Actual backend, web, and mobile paths.
+- Relevant existing architecture.
+- Important compatibility decisions.
+
+### B. Implemented changes
+- Files created.
+- Files modified.
+- Database models and migrations.
+- API endpoints.
+- Policy lifecycle and permissions.
+- React/Vite components and pages.
+- Flutter screens and services.
+- English and French policy content.
+- Consent and audit behavior.
+
+### C. Verification
+- Commands executed.
+- Tests passed.
+- Tests failed or skipped.
+- Migration results.
+- Regression findings.
+- Security and accessibility checks.
+
+### D. Setup and deployment
+- Required environment variables.
+- Migration commands.
+- Test commands.
+- Development commands.
+- Administrative setup instructions.
+
+### E. Outstanding work
+- Legal placeholders.
+- Policies requiring approval.
+- External configuration requirements.
+- Payment or privacy integrations that remain incomplete.
+- Any features that were not implemented or could not be tested.
+
+Be transparent. Never invent test results or claim deployment, legal review, or compliance that has not occurred.
+
+## Final instruction
+
+**Start by auditing the existing STAR repository. Present the audit findings and implementation plan, then wait for my explicit confirmation before changing any files. After approval, implement the complete bilingual Policies & Legal Center end to end, following all 22 checklist requirements, preserving existing functionality, and using synthetic data only.**

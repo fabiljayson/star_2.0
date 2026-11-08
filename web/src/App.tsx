@@ -38,6 +38,11 @@ const CompetencyDetailPage = lazy(() => import('./pages/training/CompetencyDetai
 const AssessmentListPage = lazy(() => import('./pages/training/AssessmentListPage').then((m) => ({ default: m.AssessmentListPage })))
 const AssessmentCreatePage = lazy(() => import('./pages/training/AssessmentCreatePage').then((m) => ({ default: m.AssessmentCreatePage })))
 const AssessmentDetailPage = lazy(() => import('./pages/training/AssessmentDetailPage').then((m) => ({ default: m.AssessmentDetailPage })))
+const PolicyCenterPage = lazy(() => import('./pages/legal/PolicyCenterPage').then((m) => ({ default: m.PolicyCenterPage })))
+const PolicyDetailPage = lazy(() => import('./pages/legal/PolicyDetailPage').then((m) => ({ default: m.PolicyDetailPage })))
+const PolicyHistoryPage = lazy(() => import('./pages/legal/PolicyHistoryPage').then((m) => ({ default: m.PolicyHistoryPage })))
+const ConsentsPage = lazy(() => import('./pages/account/ConsentsPage').then((m) => ({ default: m.ConsentsPage })))
+const LegalAdminPage = lazy(() => import('./pages/admin/LegalAdminPage').then((m) => ({ default: m.LegalAdminPage })))
 
 function SessionLoading({ message }: { message: string }) {
   return (
@@ -136,6 +141,9 @@ export default function App() {
             </RedirectIfAuthenticated>
           }
         />
+        <Route path="/legal" element={<PolicyCenterPage />} />
+        <Route path="/legal/policies/:slug/history" element={<PolicyHistoryPage />} />
+        <Route path="/legal/policies/:slug" element={<PolicyDetailPage />} />
         <Route
           element={
             <ProtectedRoute>
@@ -167,6 +175,15 @@ export default function App() {
           <Route path="/marketplace/cart" element={<CartPage />} />
           <Route path="/marketplace/orders" element={<OrdersPage />} />
           <Route path="/marketplace/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/account/consents" element={<ConsentsPage />} />
+          <Route
+            path="/admin/legal"
+            element={
+              <ProtectedRoute roles={['platform_admin']}>
+                <LegalAdminPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

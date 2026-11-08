@@ -1264,6 +1264,27 @@ img.brand__mark {
   color: var(--color-text-inverse-muted);
 }
 
+.landing-footer__links {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.landing-footer__links a {
+  color: var(--color-text-inverse-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.landing-footer__links a:hover,
+.landing-footer__links a:focus-visible {
+  color: var(--color-text);
+}
+
+.privacy-request__message {
+  max-width: 480px;
+  white-space: pre-line;
+}
+
 .landing-footer__copy {
   font-size: 13px;
   color: var(--color-text-inverse-muted);
@@ -2003,4 +2024,81 @@ img.brand__mark {
   .account-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Policies & Legal Center ── */
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-lg);
+}
+
+.policy-detail__body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .policy-detail__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.policy-toc {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.policy-section h3 {
+  margin: var(--space-lg) 0 var(--space-sm);
+  font-size: 16px;
+}
+
+.policy-section:first-of-type h3 {
+  margin-top: 0;
+}
+
+.policy-section p {
+  margin: 0 0 var(--space-sm);
+  white-space: pre-line;
+}
+
+.consent-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.consent-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.field__control--area {
+  min-height: 0;
+  resize: vertical;
+  font: inherit;
+}
+
+.register-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.register-terms input[type='checkbox'] {
+  margin-top: 3px;
+  accent-color: var(--color-primary);
 }

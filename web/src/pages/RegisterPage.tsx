@@ -1,9 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { TextField } from '../components/TextField'
 import { ApiError, apiFetch } from '../lib/api'
-import type { RegisterResponse } from '../lib/types'
+import type { PolicyDetail, RegisterResponse } from '../lib/types'
 import { AuthLayout } from './AuthLayout'
 
 const OPEN_ROLES = [
@@ -17,6 +17,7 @@ type FieldErrors = {
   email?: string
   password?: string
   confirm?: string
+  terms?: string
 }
 
 export function RegisterPage() {
@@ -31,9 +32,30 @@ export function RegisterPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<RegisterResponse | null>(null)
+  // The server publishes the binding Terms version; the registration form
+  // records acceptance of that exact version.
+  const [terms, setTerms] = useState<PolicyDetail | null>(null)
+  const [accepted, setAccepted] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    apiFetch<PolicyDetail>('/legal/policies/terms-of-service/?lang=en')
+      .then((detail) => {
+        if (!cancelled) setTerms(detail)
+      })
+      .catch(() => {
+        // No published Terms: registration proceeds without a consent record.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function validate(): FieldErrors {
     const next: FieldErrors = {}
+    if (terms && !accepted) {
+      next.terms = 'Accept the current Terms of Service to continue.'
+    }
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) {
       next.email = 'Enter a valid email address.'
     } else if (!email.trim()) {
@@ -66,6 +88,7 @@ export function RegisterPage() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           role,
+          accepted_terms_version: terms?.version ?? '',
         },
       })
       setDone(data)
@@ -186,6 +209,29 @@ export function RegisterPage() {
             error={errors.confirm}
           />
         </div>
+        {terms && (
+          <label className="register-terms">
+            <input
+              type="checkbox"
+              checked={accepted}
+              onChange={(event) => setAccepted(event.target.checked)}
+              name="accepted_terms"
+            />
+            <span>
+              I accept the{' '}
+              <Link to="/legal/policies/terms-of-service" target="_blank">
+                Terms of Service
+              </Link>
+              {terms.version && ` (version ${terms.version})`}, including the
+              Privacy Policy.
+            </span>
+            {errors.terms && (
+              <p className="field__error" role="alert">
+                {errors.terms}
+              </p>
+            )}
+          </label>
+        )}
         <Button type="submit" block loading={busy}>
           {busy ? 'Creating account…' : 'Create account'}
         </Button>
