@@ -44,13 +44,13 @@ class _StarMobileAppState extends State<StarMobileApp> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _session,
-      child: NotificationForegroundPoller(
-        child: MaterialApp(
-          title: 'STAR',
-          debugShowCheckedModeBanner: false,
-          theme: buildStarTheme(),
-          home: const AuthGate(),
-        ),
+      child: MaterialApp(
+        title: 'STAR',
+        debugShowCheckedModeBanner: false,
+        theme: buildStarTheme(),
+        home: const AuthGate(),
+        builder: (context, child) =>
+            NotificationForegroundPoller(child: child!),
       ),
     );
   }
