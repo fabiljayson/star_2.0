@@ -103,6 +103,16 @@ class Product(UUIDModel, TimeStampedModel):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     sku = models.CharField(max_length=64)
+    image = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Static image path, e.g. marketplace/products/artery-forceps.jpg.",
+    )
+    image_credit = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Attribution shown with the catalogue image.",
+    )
     unit_price = models.DecimalField(
         max_digits=MONEY_MAX_DIGITS, decimal_places=0
     )

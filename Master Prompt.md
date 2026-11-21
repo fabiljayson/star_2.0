@@ -46,7 +46,8 @@ change would add a user-facing capability, stop and ask.
   required), consent trail with withdrawal, reacceptance flag and server-side
   marketplace gating, privacy requests with admin review, audit events.
 - Verified on 21 Nov 2026: `uv run pytest` → **380 passed**; `ruff` clean;
-  `makemigrations --check` → no changes.
+  `makemigrations --check` → no changes. (Product images add one migration and
+  one test: **381 passed**.)
 
 **Web** (React 19 + Vite + TypeScript, TanStack Query):
 

@@ -85,6 +85,28 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (product.imageUrl.isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(StarColors.radiusMd),
+                      child: Image.network(
+                        product.imageUrl,
+                        height: 190,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
+                    ),
+                    if (product.imageCredit.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Photo: ${product.imageCredit}',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: StarColors.textInverseMuted),
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                  ],
                   Text(product.name,
                       style: theme.textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold)),

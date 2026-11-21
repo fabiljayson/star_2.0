@@ -23,6 +23,8 @@ class Product {
     required this.name,
     required this.description,
     required this.sku,
+    this.imageUrl = '',
+    this.imageCredit = '',
     required this.unitPrice,
     required this.currency,
     required this.freeQuantity,
@@ -35,6 +37,8 @@ class Product {
   final String name;
   final String description;
   final String sku;
+  final String imageUrl;
+  final String imageCredit;
   /// Amounts come as strings from the DRF API ("2500"), XOF has no decimals.
   final String unitPrice;
   final String currency;
@@ -48,6 +52,8 @@ class Product {
         name: (json['name'] ?? '') as String,
         description: (json['description'] ?? '').toString(),
         sku: (json['sku'] ?? '') as String,
+        imageUrl: (json['image_url'] ?? '').toString(),
+        imageCredit: (json['image_credit'] ?? '').toString(),
         unitPrice: (json['unit_price'] ?? '0').toString(),
         currency: (json['currency'] ?? 'XOF') as String,
         freeQuantity:

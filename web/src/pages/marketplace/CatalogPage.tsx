@@ -149,6 +149,14 @@ export function CatalogPage() {
         <div className="product-grid">
           {products.map((product) => (
             <article key={product.id} className="product-card glass">
+              {product.image_url && (
+                <img
+                  className="product-card__image"
+                  src={product.image_url}
+                  alt=""
+                  loading="lazy"
+                />
+              )}
               <Link
                 to={`/marketplace/products/${product.id}`}
                 className="product-card__name product-link"

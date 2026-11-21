@@ -286,6 +286,9 @@ export type Product = {
   name: string
   description: string
   sku: string
+  image?: string | null
+  image_url?: string | null
+  image_credit?: string | null
   unit_price: string
   currency: string
   available_quantity: number

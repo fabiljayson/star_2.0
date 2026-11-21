@@ -33,6 +33,31 @@ class TestCatalogVisibility:
         names = [p["name"] for p in response.data["results"]]
         assert "Demo Forceps" in names
 
+    def test_product_exposes_absolute_image_url_and_credit(
+        self, verified_profile, client_factory, db
+    ):
+        category = ProductCategory.objects.create(name="Images", slug="images")
+        product = Product.objects.create(
+            supplier=verified_profile,
+            category=category,
+            name="Photographed forceps",
+            sku="IMG-1",
+            image="marketplace/products/artery-forceps.jpg",
+            image_credit="Splarka · public domain",
+            unit_price=Decimal("5000"),
+            available_quantity=5,
+            approval_status="approved",
+            is_published=True,
+        )
+        client = client_factory(UserFactory())
+        response = client.get(f"/api/v1/marketplace/products/{product.pk}/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["image_url"].startswith("http")
+        assert response.data["image_url"].endswith(
+            "/static/marketplace/products/artery-forceps.jpg"
+        )
+        assert response.data["image_credit"] == "Splarka · public domain"
+
     def test_draft_product_not_visible(self, verified_profile, client_factory, db):
         category = ProductCategory.objects.create(name="Tubes", slug="tubes")
         Product.objects.create(

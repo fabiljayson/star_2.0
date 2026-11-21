@@ -128,7 +128,7 @@ platform-administrator rights (`is_platform_admin`, staff access to
 
 ```bash
 cd backend
-uv run pytest          # 380 tests (Milestones 1–10)
+uv run pytest          # 381 tests (Milestones 1–10)
 uv run ruff check .    # lint
 uv run python manage.py makemigrations --check --dry-run   # migrations up to date?
 
@@ -265,6 +265,12 @@ The seed also creates a verified demo supplier (`supplier.demo@example.test`,
 company "Demo Surgical Supplies") with an approved marketplace product and an
 **active monthly seller subscription** (plans: monthly 5 000 FCFA, semi-annual
 10 000, annual 12 000; a user's first month is billed 2 500).
+
+`seed_showcase` adds sixteen catalogue items with demonstration photos served
+from `backend/apps/marketplace/static/marketplace/products/`. Sources, authors
+and licences are listed in that folder's `CREDITS.md` and shown with each
+product. They are placeholders; replace them with the supplier's own photos
+before approving a real listing.
 
 Periodic tasks: run `uv run python manage.py expire_marketplace_orders` (e.g.
 hourly via cron) to cancel orders whose payment window

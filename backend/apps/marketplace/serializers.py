@@ -60,6 +60,18 @@ class ProductSerializer(serializers.ModelSerializer):
     supplier_name = serializers.CharField(source="supplier.company_name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     free_quantity = serializers.IntegerField(read_only=True)
+    image_url = serializers.SerializerMethodField()
+
+    def get_image_url(self, obj) -> str | None:
+        from django.templatetags.static import static
+
+        if not obj.image:
+            return None
+        url = static(obj.image)
+        if not url.startswith("/"):
+            url = f"/{url}"
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
 
     class Meta:
         model = Product
@@ -72,6 +84,9 @@ class ProductSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "sku",
+            "image",
+            "image_url",
+            "image_credit",
             "unit_price",
             "currency",
             "available_quantity",
@@ -91,6 +106,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "free_quantity",
             "approval_status",
             "created_at",
+            "image",
+            "image_credit",
         ]
 
 

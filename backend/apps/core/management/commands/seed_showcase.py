@@ -174,22 +174,102 @@ SUPPLIER_SPECS = [
 ]
 
 PRODUCT_SPECS = [
-    ("Disposable surgical gloves (box of 100)", "Consumables"),
-    ("Absorbable sutures 2-0", "Sutures"),
-    ("Non-absorbable sutures 0 nylon", "Sutures"),
-    ("Scalpel blades No. 10 (box of 100)", "Blades"),
-    ("Metzenbaum scissors", "Instrument sets"),
-    ("Mayo scissors (straight)", "Instrument sets"),
-    ("Curved artery forceps", "Forceps"),
-    ("Needle holder, 14 cm", "Instrument sets"),
-    ("Retractor set, abdominal", "Retractors"),
-    ("Chest drain, 28 Fr", "Consumables"),
-    ("Surgical masks (box of 50)", "Consumables"),
-    ("Sterile drape packs", "Consumables"),
-    ("Bone plate, titanium, 8-hole", "Implants"),
-    ("K-wires, 2.0 mm (pack of 10)", "Implants"),
-    ("Patient warming blanket", "Monitors"),
-    ("Pulse oximeter, handheld", "Monitors"),
+    (
+        "Disposable surgical gloves (box of 100)",
+        "Consumables",
+        "marketplace/products/gloves.jpg",
+        "Wikimedia Commons · public domain",
+    ),
+    (
+        "Absorbable sutures 2-0",
+        "Sutures",
+        "marketplace/products/sutures-absorbable.jpg",
+        "Saltanat ebli · CC0",
+    ),
+    (
+        "Non-absorbable sutures 0 nylon",
+        "Sutures",
+        "marketplace/products/sutures-nylon.jpg",
+        "Saltanat · CC0",
+    ),
+    (
+        "Scalpel blades No. 10 (box of 100)",
+        "Blades",
+        "marketplace/products/scalpel-blades.jpg",
+        "Saltanat ebli · CC0",
+    ),
+    (
+        "Metzenbaum scissors",
+        "Instrument sets",
+        "marketplace/products/metzenbaum-scissors.jpg",
+        "Saltanat ebli · CC0",
+    ),
+    (
+        "Mayo scissors (straight)",
+        "Instrument sets",
+        "marketplace/products/mayo-scissors.jpg",
+        "Saltanat ebli · CC0",
+    ),
+    (
+        "Curved artery forceps",
+        "Forceps",
+        "marketplace/products/artery-forceps.jpg",
+        "Splarka · public domain",
+    ),
+    (
+        "Needle holder, 14 cm",
+        "Instrument sets",
+        "marketplace/products/needle-holder.jpg",
+        "Rschiedon · CC BY-SA 3.0",
+    ),
+    (
+        "Retractor set, abdominal",
+        "Retractors",
+        "marketplace/products/retractor.jpg",
+        "Saltanat · CC0",
+    ),
+    (
+        "Chest drain, 28 Fr",
+        "Consumables",
+        "marketplace/products/chest-drain.jpg",
+        "Johntex · CC BY 2.5",
+    ),
+    (
+        "Surgical masks (box of 50)",
+        "Consumables",
+        "marketplace/products/surgical-masks.jpg",
+        "MIKI Yoshihito · CC BY 2.0",
+    ),
+    (
+        "Sterile drape packs",
+        "Consumables",
+        "marketplace/products/sterile-drape.jpg",
+        "US Air Force / John Nimmo · public domain",
+    ),
+    (
+        "Bone plate, titanium, 8-hole",
+        "Implants",
+        "marketplace/products/bone-plate.jpg",
+        "Netha Hussain · CC BY-SA 3.0",
+    ),
+    (
+        "K-wires, 2.0 mm (pack of 10)",
+        "Implants",
+        "marketplace/products/k-wires.jpg",
+        "Ard0 · public domain",
+    ),
+    (
+        "Patient warming blanket",
+        "Monitors",
+        "marketplace/products/warming-blanket.jpg",
+        "Dmadeo · CC BY 4.0",
+    ),
+    (
+        "Pulse oximeter, handheld",
+        "Monitors",
+        "marketplace/products/pulse-oximeter.jpg",
+        "KENPEI · CC BY-SA 3.0",
+    ),
 ]
 
 SHIPPING_TEMPLATE = {
@@ -621,7 +701,9 @@ class Command(BaseCommand):
         verified_products = []
         for supplier in self.suppliers:
             profile = supplier["profile"]
-            for idx, (pname, category_name) in enumerate(PRODUCT_SPECS, start=1):
+            for idx, (pname, category_name, image, credit) in enumerate(
+                PRODUCT_SPECS, start=1
+            ):
                 sku = f"{supplier['short'].upper()}-{idx:03d}"
                 product, created = Product.objects.get_or_create(
                     supplier=profile,
@@ -630,11 +712,17 @@ class Command(BaseCommand):
                         "category": categories[category_name],
                         "name": pname,
                         "description": "Synthetic showcase catalogue item (fictional).",
+                        "image": image,
+                        "image_credit": credit,
                         "unit_price": Decimal(RNG.randint(2, 260) * 1000),
                         "available_quantity": 0,
                         "is_published": True,
                     },
                 )
+                if not created and not product.image:
+                    product.image = image
+                    product.image_credit = credit
+                    product.save(update_fields=["image", "image_credit", "updated_at"])
                 if created and supplier["verified"]:
                     marketplace_services.decide_product(admin, product, approve=True)
                     marketplace_services.restock(

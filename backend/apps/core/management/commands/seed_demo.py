@@ -208,6 +208,8 @@ class Command(BaseCommand):
             name="Demo Disposable Forceps",
             description="Synthetic marketplace demo product (fictional).",
             sku="DEM-FP-001",
+            image="marketplace/products/artery-forceps.jpg",
+            image_credit="Splarka · public domain",
             unit_price=Decimal("15000"),
             available_quantity=10,
             approval_status="approved",

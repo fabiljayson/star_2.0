@@ -270,14 +270,29 @@ class _ProductTile extends StatelessWidget {
       child: StarGlass(
         child: Row(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: StarColors.primarySoft,
-                borderRadius: BorderRadius.circular(StarColors.radiusMd),
-              ),
-              padding: const EdgeInsets.all(10),
-              child: const Icon(Icons.medical_services_outlined,
-                  color: StarColors.primary),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(StarColors.radiusMd),
+              child: product.imageUrl.isEmpty
+                  ? Container(
+                      width: 56,
+                      height: 56,
+                      color: StarColors.primarySoft,
+                      child: const Icon(Icons.medical_services_outlined,
+                          color: StarColors.primary),
+                    )
+                  : Image.network(
+                      product.imageUrl,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 56,
+                        height: 56,
+                        color: StarColors.primarySoft,
+                        child: const Icon(Icons.medical_services_outlined,
+                            color: StarColors.primary),
+                      ),
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(

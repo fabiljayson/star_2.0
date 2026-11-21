@@ -18,6 +18,9 @@ const product: Product = {
   name: 'Adson Forceps',
   description: 'Toothed forceps, 12 cm.',
   sku: 'FRC-001',
+  image: 'marketplace/products/artery-forceps.jpg',
+  image_url: 'http://api.test/static/marketplace/products/artery-forceps.jpg',
+  image_credit: 'Splarka · public domain',
   unit_price: '75000',
   currency: 'XOF',
   available_quantity: 14,
@@ -78,6 +81,10 @@ describe('CatalogPage', () => {
     expect(screen.getByText('75,000 XOF')).toBeInTheDocument()
     expect(screen.getByText('12 in stock')).toBeInTheDocument()
     expect(screen.getByText('SKU FRC-001')).toBeInTheDocument()
+    const image = document.querySelector<HTMLImageElement>('.product-card__image')
+    expect(image?.src).toBe(
+      'http://api.test/static/marketplace/products/artery-forceps.jpg',
+    )
   })
 
   it('adds a product to the cart as a buyer (scenario D)', async () => {

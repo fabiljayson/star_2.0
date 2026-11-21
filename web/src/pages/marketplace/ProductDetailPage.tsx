@@ -98,6 +98,21 @@ export function ProductDetailPage() {
         </p>
       )}
 
+      {product.image_url && (
+        <figure className="product-detail__media">
+          <img
+            className="product-detail__image"
+            src={product.image_url}
+            alt={product.name}
+          />
+          {product.image_credit && (
+            <figcaption className="product-detail__credit">
+              Photo: {product.image_credit}
+            </figcaption>
+          )}
+        </figure>
+      )}
+
       <div className="account-grid">
         <Card title="Description">
           <p>{product.description || 'No description provided.'}</p>
