@@ -77,6 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const refreshUser = useCallback(async (): Promise<void> => {
+    const me = await apiFetch<User>('/users/me/')
+    setUser(me)
+  }, [])
+
   const login = useCallback(
     async (email: string, password: string): Promise<LoginOutcome> => {
       const data = await apiFetch<LoginResponse>('/auth/login/', {
@@ -172,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       verifyMfa,
       cancelMfa,
+      refreshUser,
       logout,
       logoutAll,
       hasRole,
@@ -184,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       verifyMfa,
       cancelMfa,
+      refreshUser,
       logout,
       logoutAll,
       hasRole,

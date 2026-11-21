@@ -14,6 +14,7 @@ class NotificationCategory(models.TextChoices):
     ASSESSMENT_SUBMITTED = "assessment_submitted", "Assessment awaiting decision"
     ASSESSMENT_RESULT = "assessment_result", "Assessment decision"
     ASSESSMENT_CORRECTION = "assessment_correction", "Assessment corrections requested"
+    POLICY_UPDATE = "policy_update", "Policy update"
 
 
 # All categories shown in the preference center (order matters for the UI).

@@ -161,6 +161,10 @@ def approve(version: PolicyVersion, *, request) -> PolicyVersion:
 
 
 def publish(version: PolicyVersion, *, request) -> PolicyVersion:
+    if version.status != PolicyVersion.Status.APPROVED:
+        raise ValidationError(
+            {"status": "Only an approved version can be published."}
+        )
     if version.effective_date is None:
         raise ValidationError(
             {"effective_date": "Set an effective date before publication."}
@@ -169,6 +173,7 @@ def publish(version: PolicyVersion, *, request) -> PolicyVersion:
         # Only approved versions become binding published texts, and a new
         # published sibling automatically supersedes the previous one.
         supersede_published(version.policy, version.language, version)
+        _notify_policy_update(version, actor=request.user)
         record_audit(
             action=AuditEvent.Action.POLICY_PUBLISHED,
             request=request,
@@ -182,6 +187,27 @@ def publish(version: PolicyVersion, *, request) -> PolicyVersion:
             },
         )
     return version
+
+
+def _notify_policy_update(version: PolicyVersion, *, actor) -> int:
+    """Tell active users a new text is live; previews stay generic."""
+    from apps.accounts.models import User
+    from apps.notifications.models import NotificationCategory
+    from apps.notifications.services import notify
+
+    return notify(
+        recipients=User.objects.filter(is_active=True).exclude(pk=actor.pk),
+        category=NotificationCategory.POLICY_UPDATE,
+        title=f"{version.policy.title} updated",
+        body=(
+            f"Version {version.version} ({version.language.upper()}) is now in "
+            "force. Review it in the Policies & Legal Center."
+        ),
+        link=f"/legal/policies/{version.policy.slug}",
+        actor=actor,
+        object_type="policy_version",
+        object_pk=version.pk,
+    )
 
 
 def archive(version: PolicyVersion, *, request) -> PolicyVersion:
@@ -247,6 +273,27 @@ def published_terms_version(language: str = "en") -> PolicyVersion | None:
         or policy.published_version("en")
         or policy.published_version("fr")
     )
+
+
+def terms_acceptance_required(user) -> bool:
+    """True when a published Terms text exists that this user has not accepted.
+
+    Returns False for anonymous users, and while no Terms is published (the
+    draft-only demo state): there is nothing to accept yet.
+    """
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    policy = Policy.objects.filter(slug=REQUEST_POLICY).first()
+    if policy is None:
+        return False
+    version = policy.published_version("en") or policy.published_version("fr")
+    if version is None:
+        return False
+    return not PolicyConsent.objects.filter(
+        user=user,
+        policy_version=version,
+        withdrawn_at__isnull=True,
+    ).exists()
 
 
 def ensure_terms_consent(user, *, request=None) -> bool:

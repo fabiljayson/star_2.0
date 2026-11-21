@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
 from apps.accounts.models import User
@@ -12,6 +14,7 @@ from apps.legal.models import (
     PolicyConsent,
     PolicyVersion,
     PrivacyRequest,
+    supersede_published,
 )
 
 TERMS_SLUG = "terms-of-service"
@@ -33,16 +36,25 @@ def _register(client, email: str = "newbuyer@example.test", role: str = "buyer")
 
 @pytest.fixture
 def seeded_policies(db):
+    """Seed the drafts, then run the documented administrator setup step.
+
+    `seed_legal` publishes nothing; an administrator approves and publishes
+    each text. These tests start after that step, because most of them are
+    about the public, consented application.
+    """
     from apps.legal.management.commands.seed_legal import Command
 
     Command().handle()
+    for version in PolicyVersion.objects.all():
+        version.status = PolicyVersion.Status.APPROVED
+        version.effective_date = version.effective_date or date(2026, 10, 20)
+        version.save(update_fields=["status", "effective_date", "updated_at"])
+        supersede_published(version.policy, version.language, version)
     return {slug: Policy.objects.get(slug=slug) for slug in CONTENT}
 
 
 @pytest.fixture
 def draft_version(seeded_policies):
-    from datetime import date
-
     policy = seeded_policies[TERMS_SLUG]
     return PolicyVersion.objects.create(
         policy=policy,
@@ -335,3 +347,144 @@ class TestAdminLifecycle:
             f"/api/v1/legal/policy-versions/{draft_version.pk}/approve/"
         )
         assert response.status_code == 400
+
+
+# ── Seed and lifecycle integrity ───────────────────────────────────────
+@pytest.mark.django_db
+class TestSeedLeavesDrafts:
+    def test_seed_publishes_nothing(self):
+        from apps.legal.management.commands.seed_legal import Command
+
+        Command().handle()
+        assert Policy.objects.count() == len(CONTENT)
+        assert not PolicyVersion.objects.filter(
+            status=PolicyVersion.Status.PUBLISHED
+        ).exists()
+        # Each policy has both language drafts, and the French text is linked
+        # to the English one that it translates.
+        for policy in Policy.objects.all():
+            versions = {v.language: v for v in policy.versions.all()}
+            assert set(versions) == {"en", "fr"}
+            assert versions["fr"].translation_of_id == versions["en"].pk
+        # The public center has nothing to show until an admin publishes.
+        # (Checked without the client fixture to keep this test seed-only.)
+
+
+@pytest.mark.django_db
+class TestPublishRequiresApproval:
+    def test_a_draft_cannot_be_published_directly(
+        self, client_factory, seeded_policies, draft_version
+    ):
+        admin_client = client_factory(PlatformAdminFactory())
+        response = admin_client.post(
+            f"/api/v1/legal/policy-versions/{draft_version.pk}/publish/"
+        )
+        assert response.status_code == 400
+        draft_version.refresh_from_db()
+        assert draft_version.status == PolicyVersion.Status.DRAFT
+        assert not PolicyVersion.objects.filter(pk=draft_version.pk).filter(
+            status=PolicyVersion.Status.PUBLISHED
+        ).exists()
+
+    def test_pending_review_cannot_be_published(
+        self, client_factory, seeded_policies, draft_version
+    ):
+        admin_client = client_factory(PlatformAdminFactory())
+        admin_client.post(
+            f"/api/v1/legal/policy-versions/{draft_version.pk}/submit-review/"
+        )
+        response = admin_client.post(
+            f"/api/v1/legal/policy-versions/{draft_version.pk}/publish/"
+        )
+        assert response.status_code == 400
+        draft_version.refresh_from_db()
+        assert draft_version.status == PolicyVersion.Status.PENDING_REVIEW
+
+    def test_unreviewed_french_translation_never_goes_live(self, seeded_policies):
+        fr = seeded_policies[TERMS_SLUG].versions.get(language="fr")
+        fr.status = PolicyVersion.Status.DRAFT
+        fr.save(update_fields=["status"])
+        from django.core.exceptions import ValidationError
+
+        with pytest.raises(ValidationError):
+            supersede_published(fr.policy, "fr", fr)
+
+
+# ── Reacceptance gating ────────────────────────────────────────────────
+@pytest.mark.django_db
+class TestReacceptance:
+    def _publish_new_terms(self, policy, admin_client):
+        version = PolicyVersion.objects.create(
+            policy=policy,
+            language="en",
+            version="2.0",
+            title="Terms of Service v2",
+            body="## 1. Updated terms",
+            status=PolicyVersion.Status.DRAFT,
+            effective_date=date(2027, 1, 1),
+        )
+        for action in ("submit-review", "approve", "publish"):
+            response = admin_client.post(
+                f"/api/v1/legal/policy-versions/{version.pk}/{action}/"
+            )
+            assert response.status_code == 200, response.data
+        version.refresh_from_db()
+        return version
+
+    def test_me_flags_a_new_terms_version_until_accepted(
+        self, client, client_factory, seeded_policies
+    ):
+        user = _register(client)
+        authed = client_factory(user)
+        assert authed.get("/api/v1/auth/users/me/").data[
+            "requires_terms_acceptance"
+        ] is False
+
+        version = self._publish_new_terms(
+            seeded_policies[TERMS_SLUG], client_factory(PlatformAdminFactory())
+        )
+        assert authed.get("/api/v1/auth/users/me/").data[
+            "requires_terms_acceptance"
+        ] is True
+
+        response = authed.post(
+            "/api/v1/legal/consents/",
+            {
+                "policy_slug": TERMS_SLUG,
+                "version": version.version,
+                "language": "en",
+            },
+        )
+        assert response.status_code == 201, response.data
+        assert authed.get("/api/v1/auth/users/me/").data[
+            "requires_terms_acceptance"
+        ] is False
+        # The earlier acceptance is preserved.
+        assert PolicyConsent.objects.filter(user=user).count() == 2
+
+    def test_marketplace_writes_are_gated_on_acceptance(
+        self, client, client_factory, seeded_policies
+    ):
+        user = _register(client)
+        authed = client_factory(user)
+        self._publish_new_terms(
+            seeded_policies[TERMS_SLUG], client_factory(PlatformAdminFactory())
+        )
+        response = authed.post("/api/v1/marketplace/checkout/", {})
+        assert response.status_code == 403
+        assert response.data["error"]["code"] == "terms_acceptance_required"
+
+    def test_publishing_notifies_active_users_but_not_the_actor(
+        self, client, client_factory, seeded_policies
+    ):
+        from apps.notifications.models import Notification
+
+        reader = _register(client, email="reader@example.test")
+        admin = PlatformAdminFactory()
+        self._publish_new_terms(seeded_policies[TERMS_SLUG], client_factory(admin))
+        assert Notification.objects.filter(
+            recipient=reader, category="policy_update"
+        ).exists()
+        assert not Notification.objects.filter(
+            recipient=admin, category="policy_update"
+        ).exists()

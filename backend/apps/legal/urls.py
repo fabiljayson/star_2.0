@@ -36,6 +36,11 @@ urlpatterns = [
         name="privacy-requests",
     ),
     path(
+        "legal/policy-versions/<uuid:pk>/",
+        views.PolicyVersionDetailView.as_view(),
+        name="policy-version-detail",
+    ),
+    path(
         "legal/policy-versions/<uuid:pk>/<str:action>/",
         views.PolicyVersionAdminActionView.as_view(),
         name="policy-version-action",

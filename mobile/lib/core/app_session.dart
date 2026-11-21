@@ -15,6 +15,7 @@ class StarUser {
     required this.isVerified,
     required this.isPlatformAdmin,
     required this.roles,
+    this.requiresTermsAcceptance = false,
   });
 
   final String id;
@@ -23,6 +24,10 @@ class StarUser {
   final bool isVerified;
   final bool isPlatformAdmin;
   final List<Map<String, dynamic>> roles;
+
+  /// True when the server says the current Terms of Service version has not
+  /// been accepted by this account yet.
+  final bool requiresTermsAcceptance;
 
   List<String> get roleNames =>
       roles.map((role) => '${role['role']}').toList();
@@ -35,6 +40,7 @@ class StarUser {
         isPlatformAdmin: json['is_platform_admin'] == true,
         roles: (json['roles'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>(),
+        requiresTermsAcceptance: json['requires_terms_acceptance'] == true,
       );
 }
 
@@ -102,6 +108,22 @@ class AppSession extends ChangeNotifier implements ApiTokenSource {
     } catch (_) {
       _setPhase(AuthPhase.signedOut);
     }
+  }
+
+  /// Re-fetch `/users/me/` so flags such as `requires_terms_acceptance`
+  /// reflect server state after an in-app action (e.g. accepting terms).
+  Future<void> refreshUser() async {
+    final me = _asMap(await _client.getJson('users/me/'));
+    user = StarUser.fromJson(me);
+    final stored = await store.load();
+    if (stored != null) {
+      await store.save(StoredSession(
+        accessToken: stored.accessToken,
+        refreshToken: stored.refreshToken,
+        user: me,
+      ));
+    }
+    notifyListeners();
   }
 
   /// Step 1 — email + password. May complete the login or require MFA.

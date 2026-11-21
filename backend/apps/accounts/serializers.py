@@ -61,6 +61,7 @@ class UserSummarySerializer(serializers.ModelSerializer):
 class MeSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     roles = serializers.SerializerMethodField()
+    requires_terms_acceptance = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -74,6 +75,7 @@ class MeSerializer(serializers.ModelSerializer):
             "is_platform_admin",
             "mfa_enabled",
             "roles",
+            "requires_terms_acceptance",
             "created_at",
             "updated_at",
         ]
@@ -84,6 +86,7 @@ class MeSerializer(serializers.ModelSerializer):
             "is_platform_admin",
             "mfa_enabled",
             "roles",
+            "requires_terms_acceptance",
             "created_at",
             "updated_at",
         ]
@@ -93,6 +96,11 @@ class MeSerializer(serializers.ModelSerializer):
             "institution", "department"
         ).filter(is_active=True)
         return RoleAssignmentBriefSerializer(assignments, many=True).data
+
+    def get_requires_terms_acceptance(self, obj) -> bool:
+        from apps.legal import services as legal_services
+
+        return legal_services.terms_acceptance_required(obj)
 
 
 # ── Registration / login ───────────────────────────────────────────────

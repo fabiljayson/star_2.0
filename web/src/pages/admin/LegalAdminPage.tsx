@@ -6,6 +6,7 @@ import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { ErrorState } from '../../components/ErrorState'
+import { Modal } from '../../components/Modal'
 import { Spinner } from '../../components/Spinner'
 import { TextField } from '../../components/TextField'
 import { formatDate, formatDateTime, todayIsoDate } from '../../lib/format'
@@ -81,6 +82,7 @@ function VersionsPanel() {
 
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const [reviewing, setReviewing] = useState<AdminPolicyVersion | null>(null)
 
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: ['legal-admin-versions'] })
@@ -189,6 +191,13 @@ function VersionsPanel() {
                   </td>
                   <td>
                     <div className="badge-row">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setReviewing(version)}
+                      >
+                        {version.status === 'draft' ? 'Review & edit' : 'Preview'}
+                      </Button>
                       {version.status === 'draft' && (
                         <>
                           <Button
@@ -244,7 +253,127 @@ function VersionsPanel() {
         </div>
       </Card>
       <CreateDraftPanel policies={policiesQuery.data?.results ?? []} onSaved={invalidate} onVersionCreated={(version) => {void version; invalidate()}} />
+      <VersionReviewModal
+        key={reviewing?.id ?? 'none'}
+        version={reviewing}
+        onClose={() => setReviewing(null)}
+        onSaved={invalidate}
+      />
     </div>
+  )
+}
+
+// Preview any version, and edit the text of a draft. Published texts are
+// immutable here: corrections create a new version.
+function VersionReviewModal({
+  version,
+  onClose,
+  onSaved,
+}: {
+  version: AdminPolicyVersion | null
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [title, setTitle] = useState(version?.title ?? '')
+  const [body, setBody] = useState(version?.body ?? '')
+  const [effectiveDate, setEffectiveDate] = useState(version?.effective_date ?? '')
+  const [error, setError] = useState<string | null>(null)
+
+  const editable = version?.status === 'draft'
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      if (!version) throw new Error('No version selected.')
+      return apiFetch<AdminPolicyVersion>(`/legal/policy-versions/${version.id}/`, {
+        method: 'PATCH',
+        body: {
+          title,
+          body,
+          effective_date: effectiveDate || null,
+        },
+      })
+    },
+    onSuccess: () => {
+      setError(null)
+      onSaved()
+      onClose()
+    },
+    onError: (err) => {
+      setError(err instanceof Error ? err.message : 'Could not save the draft.')
+    },
+  })
+
+  if (!version) return null
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`${version.policy_slug} · ${version.language.toUpperCase()} v${version.version}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+          {editable && (
+            <Button
+              loading={saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
+              Save draft
+            </Button>
+          )}
+        </>
+      }
+    >
+      <p className="field__hint">
+        {policyStatusLabel(version.status)} · effective{' '}
+        {formatDate(version.effective_date)}
+      </p>
+      {version.status !== 'published' && (
+        <p className="form-alert" role="note">
+          Draft / unapproved text. It is not shown publicly and is not a binding
+          policy.
+        </p>
+      )}
+      {error && (
+        <p className="form-alert" role="alert">
+          {error}
+        </p>
+      )}
+      {editable ? (
+        <div className="form-stack">
+          <TextField
+            label="Title"
+            name="draft-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+          <label className="field">
+            <span className="field__label">Body (Markdown headings with ##)</span>
+            <textarea
+              className="field__control"
+              rows={16}
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+            />
+          </label>
+          <TextField
+            label="Effective date"
+            name="draft-effective-date"
+            type="date"
+            value={effectiveDate ?? ''}
+            onChange={(event) => setEffectiveDate(event.target.value)}
+            hint="Required before publication."
+          />
+        </div>
+      ) : (
+        <div className="policy-detail__body">
+          <h3>{version.title}</h3>
+          <pre className="policy-preview">{version.body}</pre>
+        </div>
+      )}
+    </Modal>
   )
 }
 

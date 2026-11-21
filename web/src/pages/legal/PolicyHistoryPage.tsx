@@ -12,6 +12,7 @@ import type { PolicyVersionHistoryItem } from '../../lib/types'
 export function PolicyHistoryPage() {
   const [params] = useSearchParams()
   const language = pickLanguage(params.get('lang'))
+  const otherLanguage = language === 'en' ? 'fr' : 'en'
   const { slug = '' } = useParams()
   const { isPending, isError, error, data, refetch } = useQuery({
     queryKey: ['legal-policy-history', slug, language],
@@ -34,10 +35,10 @@ export function PolicyHistoryPage() {
         </div>
         <div className="badge-row">
           <Link
-            to={`/legal/policies/${slug}?lang=${language}`}
+            to={`/legal/policies/${slug}?lang=${otherLanguage}`}
             className="btn btn--secondary btn--sm"
           >
-            {language === 'fr' ? 'English' : 'Français'}
+            {otherLanguage === 'fr' ? 'Français' : 'English'}
           </Link>
           <Link to="/legal" className="btn btn--ghost btn--sm">
             Back to the Policy Center

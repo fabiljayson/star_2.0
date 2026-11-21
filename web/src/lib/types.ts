@@ -18,6 +18,8 @@ export type User = {
   is_platform_admin: boolean
   mfa_enabled: boolean
   roles: RoleAssignment[]
+  /** A newer Terms of Service is published and this user has not accepted it. */
+  requires_terms_acceptance?: boolean
   created_at: string
   updated_at: string
 }

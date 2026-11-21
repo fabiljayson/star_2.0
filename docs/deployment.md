@@ -222,9 +222,15 @@ One command is mandatory; two housekeeping tasks are optional:
       because `PAYMENTS_ACCEPT_MOCK=False` in production
 - [ ] `expire_marketplace_orders` cron entry installed (fake a stale order first)
 - [ ] `expire_marketplace_subscriptions` cron entry installed
-- [ ] Policy Center: `seed_legal` reviewed by legal counsel, operator
+- [ ] Policy Center: `seed_legal` drafts reviewed by legal counsel, operator
       placeholders (`[[Operator name — to be supplied]]`, contact e-mail,
       liability limits) replaced before any publication
+- [ ] Each EN/FR draft approved and published at `/admin/legal`; then
+      `GET /api/v1/legal/policies/?lang=fr` lists the six published texts and
+      registration accepts the published Terms version
+- [ ] Publish a test Terms version and confirm an existing account sees the
+      reacceptance banner and gets `403 terms_acceptance_required` on
+      checkout until it accepts; then archive the test version
 - [ ] Only platform editors publish policy versions; drafts are never
       linked to consents and never served to the public Policy Center
 - [ ] Backup taken **and restored** on a scratch instance

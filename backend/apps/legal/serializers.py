@@ -228,6 +228,21 @@ class PolicyVersionAdminSerializer(serializers.ModelSerializer):
         read_only_fields = ["status", "published_at", "approved_by_email"]
 
 
+class PolicyVersionDraftUpdateSerializer(serializers.ModelSerializer):
+    """Limited edit surface: drafts only, and never the lifecycle fields."""
+
+    class Meta:
+        model = PolicyVersion
+        fields = ["title", "body", "effective_date", "review_note"]
+
+    def validate(self, attrs: dict) -> dict:
+        if self.instance.status != PolicyVersion.Status.DRAFT:
+            raise serializers.ValidationError(
+                {"status": "Only a draft can be edited; create a new version instead."}
+            )
+        return attrs
+
+
 class PolicyVersionCreateSerializer(serializers.Serializer):
     language = serializers.ChoiceField(choices=["en", "fr"])
     version = serializers.CharField(max_length=32)

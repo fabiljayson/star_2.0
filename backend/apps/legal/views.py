@@ -26,6 +26,7 @@ from .serializers import (
     PolicyVersionAdminSerializer,
     PolicyVersionCreateSerializer,
     PolicyVersionDetailSerializer,
+    PolicyVersionDraftUpdateSerializer,
     PrivacyRequestAdminActionSerializer,
     PrivacyRequestAdminSerializer,
     PrivacyRequestCreateSerializer,
@@ -295,6 +296,51 @@ class PolicyVersionAdminActionView(views.APIView):
                 getattr(error, "message_dict", None) or {"detail": [str(error)]},
                 status=400,
             )
+        return Response(PolicyVersionAdminSerializer(version).data)
+
+
+class PolicyVersionDetailView(views.APIView):
+    """Admin preview + draft editing. Published texts stay immutable."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        if not is_platform_admin(request.user):
+            return Response(
+                {"detail": "Only platform administrators preview policy drafts."},
+                status=403,
+            )
+        version = PolicyVersion.objects.select_related("policy").filter(pk=pk).first()
+        if version is None:
+            return Response({"detail": "Not found."}, status=404)
+        return Response(PolicyVersionAdminSerializer(version).data)
+
+    def patch(self, request, pk):
+        if not is_platform_admin(request.user):
+            return Response(
+                {"detail": "Only platform administrators edit policy drafts."},
+                status=403,
+            )
+        version = PolicyVersion.objects.select_related("policy").filter(pk=pk).first()
+        if version is None:
+            return Response({"detail": "Not found."}, status=404)
+        serializer = PolicyVersionDraftUpdateSerializer(
+            version, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        record_audit(
+            action=AuditEvent.Action.POLICY_VERSION_UPDATED,
+            request=request,
+            object_type="policy_version",
+            object_pk=version.pk,
+            metadata={
+                "policy": version.policy.slug,
+                "language": version.language,
+                "version": version.version,
+                "edited_fields": sorted(serializer.validated_data.keys()),
+            },
+        )
         return Response(PolicyVersionAdminSerializer(version).data)
 
 

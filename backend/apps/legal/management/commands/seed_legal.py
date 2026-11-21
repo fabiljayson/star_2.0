@@ -1,14 +1,9 @@
 # seed_legal.py
 from __future__ import annotations
 
-from datetime import date
-
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
-from apps.legal.models import Policy, PolicyVersion, supersede_published
-
-EFFECTIVE_DATE = date(2026, 10, 20)
+from apps.legal.models import Policy, PolicyVersion
 
 # Catalogue of the Policy Center (stable slugs, bilingual versions).
 # Operator-identifying facts are intentionally left as placeholders — the
@@ -882,16 +877,11 @@ VERSION = "1.0"
 
 class Command(BaseCommand):
     help = (
-        "Seed the Policies & Legal Center: six bilingual policies published as "
-        "version 1.0. Idempotent — existing published v1.0 texts are left as-is."
+        "Seed the Policies & Legal Center: six bilingual policies as version 1.0 "
+        "drafts. Nothing is published — a platform administrator must review and "
+        "publish each text through /admin/legal. Idempotent: existing v1.0 texts "
+        "are left untouched."
     )
-
-    def add_arguments(self, parser):
-        parser.add_argument(
-            "--reset",
-            action="store_true",
-            help="Archive every draft/work item before reseeding.",
-        )
 
     def handle(self, *args, **options):
         policy_map: dict[str, Policy] = {}
@@ -911,44 +901,32 @@ class Command(BaseCommand):
             policy_map[left].related_policies.add(policy_map[right])
             policy_map[right].related_policies.add(policy_map[left])
 
-        published_count = 0
+        draft_count = 0
         for slug, languages in CONTENT.items():
             policy = policy_map[slug]
-            en = languages["en"]
-            fr = languages["fr"]
-
-            en_version = PolicyVersion.objects.filter(
-                policy=policy, language="en", version=VERSION
-            ).first()
-            if en_version is None:
-                en_version = PolicyVersion.objects.create(
+            for language in ("en", "fr"):
+                text = languages[language]
+                if PolicyVersion.objects.filter(
+                    policy=policy, language=language, version=VERSION
+                ).exists():
+                    continue
+                source = PolicyVersion.objects.filter(
+                    policy=policy, language="en", version=VERSION
+                ).first()
+                PolicyVersion.objects.create(
                     policy=policy,
-                    language="en",
+                    translation_of=source if language == "fr" else None,
+                    language=language,
                     version=VERSION,
-                    title=en["title"],
-                    body=en["body"],
-                    status=PolicyVersion.Status.PUBLISHED,
-                    effective_date=EFFECTIVE_DATE,
-                    published_at=timezone.now(),
+                    title=text["title"],
+                    body=text["body"],
+                    # Drafts only: publication is a reviewed administrator
+                    # action, never a side effect of seeding.
+                    status=PolicyVersion.Status.DRAFT,
                 )
-                published_count += 1
-            sup_version = PolicyVersion.objects.filter(
-                policy=policy, language="fr", version=VERSION
-            ).first()
-            if sup_version is None:
-                supersede_published(policy, "fr", PolicyVersion.objects.create(
-                    policy=policy,
-                    translation_of=en_version,
-                    language="fr",
-                    version=VERSION,
-                    title=fr["title"],
-                    body=fr["body"],
-                    status=PolicyVersion.Status.PENDING_REVIEW,
-                    effective_date=EFFECTIVE_DATE,
-                ))
-                published_count += 1
+                draft_count += 1
 
         self.stdout.write(
             f"Legal center seeded: {len(POLICY_META)} policies, "
-            f"{published_count} new published bilingual versions."
+            f"{draft_count} new bilingual drafts (nothing published)."
         )

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context'
 import { Button } from '../components/Button'
+import { TermsUpdateBanner } from '../components/TermsUpdateBanner'
 import { initialsOf, roleLabel } from '../lib/roles'
 import { NAV_ITEMS, filterNavItems } from './nav'
 import { useQuery } from '@tanstack/react-query'
@@ -116,6 +117,7 @@ export function AppShell() {
           </ul>
         </nav>
         <main className="app-main">
+          <TermsUpdateBanner />
           <Outlet />
         </main>
       </div>

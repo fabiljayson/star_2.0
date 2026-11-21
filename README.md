@@ -269,9 +269,11 @@ seller subscriptions to `expired` and cancel never-paid checkouts.
 
 The Policies & Legal Center is seeded with
 `uv run python manage.py seed_legal`: six bilingual (EN/FR) policy texts
-published as version 1.0, including the Terms of Service registration
-consent is checked against. Registration without the published Terms version
-therefore requires the seed (or equivalent data).
+created as **drafts** (version 1.0, EN linked to FR via `translation_of`).
+Nothing is public until a platform admin reviews and publishes each text in
+**Admin → Policies** (`/admin/legal`); registration validates acceptance
+against the *published* Terms of Service, so a fresh environment cannot
+register until that version is published.
 
 ---
 
@@ -309,7 +311,7 @@ star/
 | 6 | Complete web interfaces (mobile outstanding) | **done** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | **done** (327 tests) |
 | 8 | Seller subscription: monthly paid plans gate listing publication, catalog hides lapsed suppliers, subscription payments reuse the sandbox webhook | **done** — backend (349 tests), web (61 tests) & mobile (22 tests) |
-| 9 | Policies & Legal Center: six bilingual policies, versioned lifecycle with published/draft separation, consent recording at registration, privacy requests, admin workflow | **backend done** `apps.legal` (370 tests) — web (M9b) & mobile (M9c) pending |
+| 9 | Policies & Legal Center: six bilingual policies, versioned lifecycle with published/draft separation, consent recording at registration, privacy requests, admin workflow, reacceptance of updated Terms | **done** — backend `apps.legal` (M9a), web legal center + admin review (M9b), Flutter legal center (M9c) |
 
 See `docs/architecture.md` for design decisions and security notes.
 

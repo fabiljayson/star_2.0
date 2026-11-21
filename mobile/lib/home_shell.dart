@@ -5,6 +5,8 @@ import 'core/app_session.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/mfa_page.dart';
 import 'features/dashboard/dashboard_page.dart';
+import 'features/legal/legal_center_page.dart';
+import 'features/legal/terms_update_banner.dart';
 import 'features/logbook/logbook_list_page.dart';
 import 'features/marketplace/orders_page.dart';
 import 'features/notifications/notifications_page.dart';
@@ -36,6 +38,7 @@ class _HomeShellState extends State<HomeShell> {
       const LogbookListPage(),
       if (hasOrdersAccess) const OrdersPage(),
       const NotificationsPage(),
+      const LegalCenterPage(),
     ];
     final destinations = <Widget>[
       const NavigationDestination(
@@ -59,10 +62,20 @@ class _HomeShellState extends State<HomeShell> {
         selectedIcon: Icon(Icons.notifications),
         label: 'Alerts',
       ),
+      const NavigationDestination(
+        icon: Icon(Icons.policy_outlined),
+        selectedIcon: Icon(Icons.policy),
+        label: 'Legal',
+      ),
     ];
     final tab = _tab.clamp(0, pages.length - 1);
     return Scaffold(
-      body: IndexedStack(index: tab, children: pages),
+      body: Column(
+        children: [
+          const TermsUpdateBanner(),
+          Expanded(child: IndexedStack(index: tab, children: pages)),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,
         destinations: [for (final dest in destinations) dest],

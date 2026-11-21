@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.core.models import TimeStampedModel, UUIDModel
@@ -224,14 +224,28 @@ class PrivacyRequest(UUIDModel, TimeStampedModel):
 
 
 def supersede_published(policy: Policy, language: str, new_version: PolicyVersion):
-    """Mark an already published sibling as superseded when publishing another."""
+    """Publish an approved version and retire the sibling that was live.
+
+    Only approved texts may enter the published slot: this function is the
+    single write path to `published`, so a draft or a pending translation can
+    never go live by being passed here.
+    """
     version = new_version
-    for existing in policy.versions.filter(
-        status=PolicyVersion.Status.PUBLISHED,
-        language=language,
-    ).exclude(pk=version.pk):
-        existing.status = PolicyVersion.Status.SUPERSEDED
-        existing.save(update_fields=["status", "updated_at"])
-    version.status = PolicyVersion.Status.PUBLISHED
-    version.published_at = timezone.now()
-    version.save(update_fields=["status", "published_at", "updated_at"])
+    if version.policy_id != policy.pk:
+        raise ValidationError("Version does not belong to this policy.")
+    if version.language != language:
+        raise ValidationError("Version language does not match the published slot.")
+    if version.status != PolicyVersion.Status.APPROVED:
+        raise ValidationError(
+            {"status": "Only an approved version can become the published text."}
+        )
+    with transaction.atomic():
+        for existing in policy.versions.filter(
+            status=PolicyVersion.Status.PUBLISHED,
+            language=language,
+        ).exclude(pk=version.pk):
+            existing.status = PolicyVersion.Status.SUPERSEDED
+            existing.save(update_fields=["status", "updated_at"])
+        version.status = PolicyVersion.Status.PUBLISHED
+        version.published_at = timezone.now()
+        version.save(update_fields=["status", "published_at", "updated_at"])

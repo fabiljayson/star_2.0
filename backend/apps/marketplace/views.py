@@ -48,6 +48,20 @@ from .serializers import (
 )
 
 
+def _require_current_terms(request) -> None:
+    """Gate marketplace writes on accepting the live Terms of Service.
+
+    No published Terms (draft-only demo state) means nothing to accept.
+    """
+    from apps.legal.services import terms_acceptance_required
+
+    if terms_acceptance_required(request.user):
+        raise exceptions.PermissionDenied(
+            "Accept the current Terms of Service before using the marketplace.",
+            code="terms_acceptance_required",
+        )
+
+
 class CategoryListView(generics.ListAPIView):
     serializer_class = ProductCategorySerializer
     queryset = ProductCategory.objects.filter(is_active=True)
@@ -127,6 +141,7 @@ class SupplierProductListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         profile = services.require_supplier(request.user)
+        _require_current_terms(request)
         serializer = ProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = services.create_product(
@@ -148,6 +163,7 @@ class SupplierProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         wants_publish = bool(serializer.validated_data.get("is_published"))
         if wants_publish and not serializer.instance.is_published:
+            _require_current_terms(self.request)
             subscriptions.require_active_subscription(self.request.user)
         serializer.save()
 
@@ -295,6 +311,7 @@ class CartItemDetailView(APIView):
 
 class CheckoutView(APIView):
     def post(self, request):
+        _require_current_terms(request)
         serializer = CheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         shipping = serializer.validated_data.get("shipping", {})
@@ -453,6 +470,7 @@ class SubscriptionStatusView(APIView):
 
 class SubscriptionCheckoutView(APIView):
     def post(self, request):
+        _require_current_terms(request)
         serializer = SubscriptionCheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         subscription, payment, created = subscriptions.start_checkout(

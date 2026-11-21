@@ -12,6 +12,7 @@ export type AuthContextValue = {
   login: (email: string, password: string) => Promise<LoginOutcome>
   verifyMfa: (code: string) => Promise<void>
   cancelMfa: () => void
+  refreshUser: () => Promise<void>
   logout: () => Promise<void>
   logoutAll: () => Promise<void>
   hasRole: (role: string) => boolean

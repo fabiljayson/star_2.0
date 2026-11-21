@@ -120,6 +120,7 @@ class AuditEvent(UUIDModel, TimeStampedModel):
         DISPUTE_EVIDENCE_ADDED = "marketplace.dispute_evidence_added", "Dispute evidence added"
         DISPUTE_RESOLVED = "marketplace.dispute_resolved", "Dispute resolved"
         POLICY_VERSION_CREATED = "legal.policy_version_created", "Policy version created"
+        POLICY_VERSION_UPDATED = "legal.policy_version_updated", "Policy version draft edited"
         POLICY_SUBMITTED = "legal.policy_submitted", "Policy submitted for review"
         POLICY_APPROVED = "legal.policy_approved", "Policy approved"
         POLICY_PUBLISHED = "legal.policy_published", "Policy published"

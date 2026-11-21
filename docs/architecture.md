@@ -361,6 +361,31 @@ Rules enforced in `apps/logbook/services.py`:
   (access/export/deletion/correction) with user-opened + admin-review
   workflow. Admin lifecycle endpoints (create draft, submit-review, approve,
   publish with automatic supersede, archive) restricted to platform admins;
-  every transition audited (`legal.*`). Seed command `seed_legal` publishes
-  the six bilingual policy texts v1.0 with operator placeholders; 21 new
-  tests (370 total). **Web & mobile UI follow in M9b/M9c.**
+  every transition audited (`legal.*`). Publication is a single write path:
+  `publish()` and `supersede_published()` both refuse a version that is not
+  `approved`, so the immutable published text cannot be skipped by calling
+  the service directly. Seed command `seed_legal` now creates all six
+  bilingual texts as **drafts** with operator placeholders; an admin reviews
+  and publishes them in the web admin, which also records `approved_by`.
+  Because a published version is immutable, a correction means a new draft
+  version, approval, and publication (the old row becomes `superseded`).
+
+- **M9b (done):** web Policies & Legal Center — public policy index/detail
+  with EN/FR switch, in-page table of contents, print stylesheet, version
+  history, consent status + history, privacy-request submission, and the
+  admin review workspace (`/admin/legal`): draft text edit, preview of any
+  version, submit-review/approve/publish/archive and privacy-request
+  triage. A non-blocking banner re-asks for acceptance when
+  `requires_terms_acceptance` is true; marketplace writes (listing
+  publish, checkout, subscription checkout) return
+  `403 terms_acceptance_required` until the current Terms version is
+  accepted, and earlier acceptances remain in the consent trail.
+
+- **M9c (done):** Flutter legal center — policy list grouped by category
+  with EN/FR switch, full policy text with section chips, version history,
+  consent status/history with accept and withdraw, privacy-request form and
+  status, the same Terms reacceptance banner, and an in-memory last-copy
+  cache that is clearly labelled when the device is offline. No new
+  localization framework was introduced: strings live in the feature
+  (`legal_strings.dart`) and the API remains the source of truth for
+  language fallback.
