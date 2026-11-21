@@ -53,13 +53,11 @@ def _require_current_terms(request) -> None:
 
     No published Terms (draft-only demo state) means nothing to accept.
     """
+    from apps.core.exceptions import TermsAcceptanceRequired
     from apps.legal.services import terms_acceptance_required
 
     if terms_acceptance_required(request.user):
-        raise exceptions.PermissionDenied(
-            "Accept the current Terms of Service before using the marketplace.",
-            code="terms_acceptance_required",
-        )
+        raise TermsAcceptanceRequired()
 
 
 class CategoryListView(generics.ListAPIView):

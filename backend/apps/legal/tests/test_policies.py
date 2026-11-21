@@ -436,14 +436,14 @@ class TestReacceptance:
     ):
         user = _register(client)
         authed = client_factory(user)
-        assert authed.get("/api/v1/auth/users/me/").data[
+        assert authed.get("/api/v1/users/me/").data[
             "requires_terms_acceptance"
         ] is False
 
         version = self._publish_new_terms(
             seeded_policies[TERMS_SLUG], client_factory(PlatformAdminFactory())
         )
-        assert authed.get("/api/v1/auth/users/me/").data[
+        assert authed.get("/api/v1/users/me/").data[
             "requires_terms_acceptance"
         ] is True
 
@@ -456,7 +456,7 @@ class TestReacceptance:
             },
         )
         assert response.status_code == 201, response.data
-        assert authed.get("/api/v1/auth/users/me/").data[
+        assert authed.get("/api/v1/users/me/").data[
             "requires_terms_acceptance"
         ] is False
         # The earlier acceptance is preserved.

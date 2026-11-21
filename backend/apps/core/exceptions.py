@@ -26,6 +26,14 @@ class SellerSubscriptionRequired(exceptions.APIException):
     )
 
 
+class TermsAcceptanceRequired(exceptions.APIException):
+    """403 raised when a marketplace write needs the current Terms accepted."""
+
+    status_code = status.HTTP_403_FORBIDDEN
+    default_code = "terms_acceptance_required"
+    default_detail = "Accept the current Terms of Service before using the marketplace."
+
+
 def _format_detail(detail):
     if isinstance(detail, (list, tuple)):
         return [_format_detail(item) for item in detail]
