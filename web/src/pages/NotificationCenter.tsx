@@ -92,9 +92,9 @@ export function NotificationCenter() {
     if (link) navigate(link, { replace: true })
   }
 
-  function onPreferenceChange(index: number, key: 'in_app' | 'email', checked: boolean): void {
+  function onPreferenceChange(index: number, checked: boolean): void {
     const next = (preferencesQuery.data?.slice() ?? []) as NotificationPreference[]
-    next[index] = { ...next[index], [key]: checked }
+    next[index] = { ...next[index], in_app: checked }
     preferencesMutation.mutate(next)
   }
 
@@ -187,8 +187,8 @@ export function NotificationCenter() {
 
       <Card title="Delivery preferences">
         <p className="field__hint">
-          Choose how you receive each kind of notification. In-app is always available;
-          email depends on your institution's mail configuration.
+          Choose which kinds of activity appear in your in-app feed. Email
+          delivery is not available yet, so no email option is shown.
         </p>
         {preferencesQuery.isPending ? (
           <div className="page-loading" role="status">
@@ -213,25 +213,12 @@ export function NotificationCenter() {
                         type="checkbox"
                         checked={pref.in_app}
                         onChange={(event) =>
-                          onPreferenceChange(index, 'in_app', event.target.checked)
+                          onPreferenceChange(index, event.target.checked)
                         }
                       />
                       <span className="toggle__thumb" aria-hidden="true" />
                       <span className="toggle__label" aria-hidden="true">
                         In app
-                      </span>
-                    </label>
-                    <label className="toggle">
-                      <input
-                        type="checkbox"
-                        checked={pref.email}
-                        onChange={(event) =>
-                          onPreferenceChange(index, 'email', event.target.checked)
-                        }
-                      />
-                      <span className="toggle__thumb" aria-hidden="true" />
-                      <span className="toggle__label" aria-hidden="true">
-                        Email
                       </span>
                     </label>
                   </div>

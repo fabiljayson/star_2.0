@@ -45,7 +45,7 @@ change would add a user-facing capability, stop and ask.
   published versions, single write path (`supersede_published`, approval
   required), consent trail with withdrawal, reacceptance flag and server-side
   marketplace gating, privacy requests with admin review, audit events.
-- Verified on 21 Nov 2026: `uv run pytest` → **377 passed**; `ruff` clean;
+- Verified on 21 Nov 2026: `uv run pytest` → **380 passed**; `ruff` clean;
   `makemigrations --check` → no changes.
 
 **Web** (React 19 + Vite + TypeScript, TanStack Query):
@@ -63,7 +63,8 @@ change would add a user-facing capability, stop and ask.
   center (center, detail, history, consents, privacy requests, reacceptance
   banner).
 - **20 tests in 6 files**, not executed on this machine (no Flutter SDK, no
-  `fvm`). Never report them as passing until CI runs them.
+  `fvm`). Never report them as passing until CI runs them. The Milestone 10
+  CI job is what closes this gap.
 
 **CI** (`.github/workflows/ci.yml`): backend (ruff, migration check, pytest
 against PostgreSQL 16) and web (oxlint, vitest, build). No Flutter job.
@@ -139,6 +140,10 @@ unsupported by the implementation:
 
 G1–G5 are in scope. G6–G7 are documentation/decision items in this milestone;
 changing storage or extending gating requires a separate decision.
+
+**Delivery status (21 Nov 2026):** Phases A–E are implemented and covered by
+380 backend / 84 web tests. G1 remains open until the new Flutter CI job has
+run on a pushed commit; do not describe mobile tests as passing before that.
 
 ---
 
@@ -263,7 +268,7 @@ Run at minimum:
 cd backend
 uv run ruff check .
 uv run python manage.py makemigrations --check --dry-run
-uv run pytest                     # expect 377+ passing
+uv run pytest                     # expect 380+ passing
 
 # web
 cd ../web

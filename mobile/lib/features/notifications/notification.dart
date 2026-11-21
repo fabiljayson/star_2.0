@@ -43,30 +43,19 @@ class StarNotification {
 
 /// Per-category switches for the notification center.
 class NotificationPreference {
-  const NotificationPreference({
-    required this.category,
-    required this.inApp,
-    required this.email,
-  });
+  const NotificationPreference({required this.category, required this.inApp});
 
   final String category;
   final bool inApp;
-  final bool email;
 
-  NotificationPreference copyWith({bool? inApp, bool? email}) =>
-      NotificationPreference(
-        category: category,
-        inApp: inApp ?? this.inApp,
-        email: email ?? this.email,
-      );
+  NotificationPreference copyWith({bool? inApp}) =>
+      NotificationPreference(category: category, inApp: inApp ?? this.inApp);
 
   factory NotificationPreference.fromJson(Map<String, dynamic> json) =>
       NotificationPreference(
         category: '${json['category'] ?? ''}',
         inApp: json['in_app'] != false,
-        email: json['email'] == true,
       );
 
-  Map<String, dynamic> toJson() =>
-      {'category': category, 'in_app': inApp, 'email': email};
+  Map<String, dynamic> toJson() => {'category': category, 'in_app': inApp};
 }

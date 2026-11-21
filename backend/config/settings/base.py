@@ -181,6 +181,8 @@ REST_FRAMEWORK = {
         "register": "5/hour",
         "password": "5/hour",
         "mfa": "10/min",
+        "consent_write": os.environ.get("CONSENT_THROTTLE_RATE", "20/hour"),
+        "privacy_request": os.environ.get("PRIVACY_REQUEST_THROTTLE_RATE", "5/hour"),
     },
 }
 

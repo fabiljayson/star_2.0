@@ -74,6 +74,24 @@ before the first boot:
 
 Full reference with comments lives in `.env.example`.
 
+### Vercel demo deployment (demo only)
+
+`vercel.json` deploys the showcase (API service + Vite site) and seeds the
+legal drafts. It contains **no credentials**. To seed the shared demo
+administrator and showcase dataset, set `DEMO_ADMIN_PASSWORD` in the Vercel
+project environment; when it is unset the build skips demo seeding and no
+administrator is created (use `createsuperuser` instead).
+
+Two constraints make this a demo topology, not production:
+
+- The backend filesystem is ephemeral, so `PRIVATE_MEDIA_ROOT` is not durable
+  and clinical attachments are lost on redeploy. Use the single-host layout
+  above when files must survive.
+- `seed_legal` creates agreements in **draft**; they must still be reviewed and
+  published by an administrator, and legal review remains mandatory.
+
+---
+
 ## 3. Database
 
 Keep the shipped `docker-compose.yml` for Postgres, editing `.env` so the
@@ -235,6 +253,9 @@ One command is mandatory; two housekeeping tasks are optional:
       linked to consents and never served to the public Policy Center
 - [ ] Backup taken **and restored** on a scratch instance
 - [ ] Platform admin account(s) exist and have MFA enrolled
+- [ ] Notification preferences show in-app only; no inert email toggle is offered
+- [ ] Vercel demo (if used) has `DEMO_ADMIN_PASSWORD` set as a project secret,
+      never in `vercel.json`
 - [ ] `docs` + README updated with where the service actually runs
 
 ## 8. Monitoring and recovery
@@ -261,7 +282,7 @@ One command is mandatory; two housekeeping tasks are optional:
 |---|---|---|
 | Payments | `PAYMENT_PROVIDER=sandbox`: signed mock webhook | Contract a real PSP; implement its provider in `apps/marketplace/payments.py` (same webhook-verification pattern: signature over canonical JSON, idempotence, amount/currency checks). Keep `PAYMENTS_ACCEPT_MOCK=False` in production. |
 | Transcription | `TRANSCRIPTION_PROVIDER=mock`: deterministic en/fr text, banner `SIMULATED`, audio deleted after validation | Contract a speech-to-text service; implement the same provider interface (`apps/logbook/transcription.py`). Audio retention rules: nothing is ever persisted today; build the retention policy WITH your DPO. |
-| Email | `.env.example` wires an SMTP block already (`EMAIL_*` keys are consolidated in `MAILERS` — see README troubleshooting) | Point at a real SMTP relay; verify from-address SPF/DKIM; hosting provider stuffs e-mail, so use a transactional service. |
+| Email | `.env.example` wires an SMTP block already (`EMAIL_*` keys are consolidated in `MAILERS` — see README troubleshooting). It is used for verification and password-reset mail; notification email is **not implemented** — the preference centre exposes in-app delivery only. | Point at a real SMTP relay; verify from-address SPF/DKIM; hosting provider stuffs e-mail, so use a transactional service. Notification email needs its own delivery implementation before the channel is offered. |
 
 **Updating:** pull code → `uv pip install -e .` → `migrate` → `collectstatic`
 → `systemctl restart star` → curl the health endpoint. Keep changes visible

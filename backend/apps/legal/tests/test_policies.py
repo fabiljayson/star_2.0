@@ -488,3 +488,57 @@ class TestReacceptance:
         assert not Notification.objects.filter(
             recipient=admin, category="policy_update"
         ).exists()
+
+
+# ── Abuse limits on legal writes ───────────────────────────────────────
+@pytest.mark.django_db
+class TestLegalWriteThrottling:
+    CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+
+    @staticmethod
+    def _patch_rate(monkeypatch, scope):
+        from django.conf import settings
+        from rest_framework.throttling import ScopedRateThrottle
+
+        rates = dict(settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"])
+        rates[scope] = "2/hour"
+        monkeypatch.setattr(ScopedRateThrottle, "THROTTLE_RATES", rates, raising=False)
+
+    @pytest.fixture(autouse=True)
+    def _rate_limit(self, monkeypatch):
+        self._patch_rate(monkeypatch, "consent_write")
+
+    def test_consent_writes_are_throttled(self, client, client_factory):
+        from django.core.cache import cache
+        from django.test import override_settings
+
+        with override_settings(CACHES=self.CACHES):
+            cache.clear()
+            authed = client_factory(_register(client))
+            responses = [
+                authed.post("/api/v1/legal/consents/", {}) for _ in range(3)
+            ]
+            cache.clear()
+
+        assert [r.status_code for r in responses[:2]] == [400, 400]
+        assert responses[2].status_code == 429
+        assert responses[2]["Retry-After"]
+
+    def test_privacy_request_creation_is_throttled(self, client, client_factory, monkeypatch):
+        from django.core.cache import cache
+        from django.test import override_settings
+
+        self._patch_rate(monkeypatch, "privacy_request")
+        with override_settings(CACHES=self.CACHES):
+            cache.clear()
+            authed = client_factory(_register(client))
+            responses = [
+                authed.post("/api/v1/legal/privacy-requests/", {}) for _ in range(3)
+            ]
+            cache.clear()
+
+        assert [r.status_code for r in responses[:2]] == [400, 400]
+        assert responses[2].status_code == 429
+        assert responses[2]["Retry-After"]

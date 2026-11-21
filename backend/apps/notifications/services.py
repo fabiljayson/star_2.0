@@ -107,7 +107,7 @@ def list_preferences(user) -> list[NotificationPreference]:
 
 
 def update_preferences(user, items: list[dict]) -> list[NotificationPreference]:
-    allowed_fields = {"in_app", "email"}
+    allowed_fields = {"in_app"}
     for item in items:
         category = item.get("category")
         if category not in ALL_CATEGORIES:
@@ -120,9 +120,7 @@ def update_preferences(user, items: list[dict]) -> list[NotificationPreference]:
                 {"fields": f"Unsupported fields: {', '.join(sorted(unknown))}."}
             )
         if not allowed_fields & set(item):
-            raise exceptions.ValidationError(
-                {"fields": "Provide at least 'in_app' or 'email'."}
-            )
+            raise exceptions.ValidationError({"fields": "Provide 'in_app'."})
     for item in items:
         defaults = {key: item[key] for key in allowed_fields if key in item}
         NotificationPreference.objects.update_or_create(

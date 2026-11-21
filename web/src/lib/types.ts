@@ -622,7 +622,6 @@ export type Notification = {
 export type NotificationPreference = {
   category: NotificationCategoryValue
   in_app: boolean
-  email: boolean
 }
 
 // ── Placement progress ──

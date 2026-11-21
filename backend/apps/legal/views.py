@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import rest_framework.views as views
 from django.http import Http404
-from rest_framework import permissions, status
+from rest_framework import permissions, status, throttling
 from rest_framework.response import Response
 
 from apps.core.audit import record_audit
@@ -114,6 +114,8 @@ class PolicyHistoryView(views.APIView):
 # ── Consents ──────────────────────────────────────────────────────────
 class ConsentCreateView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [throttling.ScopedRateThrottle]
+    throttle_scope = "consent_write"
 
     def post(self, request):
         serializer = ConsentCreateSerializer(data=request.data)
@@ -149,6 +151,8 @@ class ConsentStatusView(views.APIView):
 
 class ConsentWithdrawView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [throttling.ScopedRateThrottle]
+    throttle_scope = "consent_write"
 
     def post(self, request):
         slug = (request.data or {}).get("policy", "")
@@ -183,6 +187,13 @@ class PrivacyRequestMineView(views.APIView):
 
 class PrivacyRequestAdminView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_scope = "privacy_request"
+
+    def get_throttles(self):
+        # Only opening a petition is rate-limited; administrators may still list.
+        if self.request.method == "POST":
+            return [throttling.ScopedRateThrottle()]
+        return []
 
     def post(self, request):
         serializer = PrivacyRequestCreateSerializer(data=request.data)

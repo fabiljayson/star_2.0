@@ -10,15 +10,18 @@ STAR is a documentation, education and commerce platform. It does **not**
 diagnose patients, prescribe treatment, or replace an institution's official
 medical record system.
 
-> **Status:** Milestones 1–7 delivered (foundations, surgical logbook,
+> **Status:** Milestones 1–10 delivered (foundations, surgical logbook,
 > education, mock transcription, in-app notifications, reports/exports, the
 > full marketplace: catalog, inventory, orders, sandbox payments, shipping,
-> refunds and disputes, plus cross-cutting E2E scenario tests, security
-> hardening invariants and deployment docs).
-> Milestone 6 web app covers authentication, dashboard, logbook, training,
-> reporting, marketplace, notifications and the institution, supplier and
-> platform administration workspaces.
-> The Flutter mobile client is still outstanding.
+> refunds and disputes, seller subscriptions, plus cross-cutting scenario
+> tests, security hardening invariants and deployment docs).
+> The web app covers authentication, dashboard, logbook, training, reporting,
+> marketplace, notifications, the institution/supplier/platform
+> administration workspaces, and the bilingual Policies & Legal Center.
+> The Flutter client covers the clinical core, marketplace, notifications and
+> the Legal Center. Milestone 10 is the trust pass: Flutter runs in CI,
+> deployment config carries no credentials, legal writes are throttled, and
+> notification preferences show only channels that deliver.
 > See [Milestones](#milestones) and [docs/deployment.md](docs/deployment.md).
 
 ---
@@ -125,14 +128,14 @@ platform-administrator rights (`is_platform_admin`, staff access to
 
 ```bash
 cd backend
-uv run pytest          # 327 tests (Milestones 1–7)
+uv run pytest          # 380 tests (Milestones 1–10)
 uv run ruff check .    # lint
 uv run python manage.py makemigrations --check --dry-run   # migrations up to date?
 
 cd ../web
 npx oxlint src         # lint
 npx tsc -b             # typecheck
-npm run test           # vitest (57 tests)
+npm run test           # vitest (84 tests)
 npm run build          # production build (includes typecheck)
 ```
 
@@ -214,13 +217,15 @@ access-denied state when opened directly without that role.
 
 ## Mobile app (experimental)
 
-`mobile/` hosts the Flutter client for the clinical core (sign in, TOTP MFA,
-dashboard, surgical logbook). It is developed with [fvm] pinned to the stable
-channel (`fvm use` reads `mobile/.fvmrc`):
+`mobile/` hosts the Flutter client: sign in, TOTP MFA, dashboard, surgical
+logbook, marketplace and seller subscriptions, notifications, and the
+Policies & Legal Center (policy reading, consent history, privacy requests,
+Terms reacceptance). It is developed with [fvm] pinned to the stable channel
+(`fvm use` reads `mobile/.fvmrc`):
 
 ```bash
 cd mobile
-fvm flutter test                 # 17 tests (client, session, auth UI flows)
+fvm flutter test                 # client, session, auth, legal and subscription tests
 fvm flutter analyze
 fvm flutter build apk --release --split-per-abi   # per-device APKs
 ```
@@ -308,10 +313,11 @@ star/
 | 3 | Voice transcription adapter, training placements, competencies, assessments, notifications | **done** (203 tests) |
 | 4 | Reports and exports (PDF/CSV) | **done** (9 report types, 245 tests) |
 | 5 | Marketplace: suppliers, catalog, inventory, orders, sandbox payments, shipping, refunds, disputes, marketplace reports | **done** (312 tests) |
-| 6 | Complete web interfaces (mobile outstanding) | **done** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; Flutter client not started |
+| 6 | Complete web interfaces | **done** — auth, dashboard, logbook, training, reports, marketplace, notifications, institution/supplier/platform admin; the Flutter client followed in milestones 8–9 |
 | 7 | Tests for scenarios A–H, security checks, deployment docs | **done** (327 tests) |
 | 8 | Seller subscription: monthly paid plans gate listing publication, catalog hides lapsed suppliers, subscription payments reuse the sandbox webhook | **done** — backend (349 tests), web (61 tests) & mobile (22 tests) |
 | 9 | Policies & Legal Center: six bilingual policies, versioned lifecycle with published/draft separation, consent recording at registration, privacy requests, admin workflow, reacceptance of updated Terms | **done** — backend `apps.legal` (M9a), web legal center + admin review (M9b), Flutter legal center (M9c) |
+| 10 | Trust pass: Flutter job in CI, no credentials in deployment config, scoped throttles on legal writes, in-app-only notification preferences, documentation corrected | **done** — backend (380 tests), web (84 tests); mobile suite runs in the new CI job |
 
 See `docs/architecture.md` for design decisions and security notes.
 

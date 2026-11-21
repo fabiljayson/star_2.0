@@ -35,8 +35,18 @@ class NotificationPreferenceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NotificationPreference
-        fields = ["category", "in_app", "email"]
+        fields = ["category", "in_app"]
         read_only_fields = ["category"]
+
+    def validate(self, attrs):
+        # Only advertised channels may be written; unknown keys would otherwise
+        # be silently dropped by the nested serializer.
+        unknown = set(self.initial_data) - {"category", "in_app"}
+        if unknown:
+            raise serializers.ValidationError(
+                {"fields": f"Unsupported fields: {', '.join(sorted(unknown))}."}
+            )
+        return attrs
 
 
 class NotificationPreferenceBulkSerializer(serializers.Serializer):

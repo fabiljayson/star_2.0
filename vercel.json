@@ -4,7 +4,7 @@
     "backend": {
       "root": "backend",
       "framework": "django",
-      "buildCommand": "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_legal && python manage.py seed_demo --admin-password 'Demo!Passw0rd2026' && python manage.py seed_showcase"
+      "buildCommand": "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_legal && if [ -n \"$DEMO_ADMIN_PASSWORD\" ]; then python manage.py seed_demo --admin-password \"$DEMO_ADMIN_PASSWORD\" && python manage.py seed_showcase; fi"
     },
     "web": {
       "root": "web",

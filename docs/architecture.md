@@ -343,7 +343,7 @@ Rules enforced in `apps/logbook/services.py`:
   verification, product moderation, categories, disputes, audit).
   Navigation items are role-filtered and each workspace repeats the check so a
   direct URL cannot bypass the UI gate; the API remains the authority.
-  **Outstanding:** the Flutter mobile client.
+  The Flutter client followed in milestones 8–9.
 - **M7:** per README milestones.
 
 - **M9a (done):** `apps.legal` — Policies & Legal Center backend. `Policy`
@@ -389,3 +389,11 @@ Rules enforced in `apps/logbook/services.py`:
   localization framework was introduced: strings live in the feature
   (`legal_strings.dart`) and the API remains the source of truth for
   language fallback.
+
+- **M10 (trust pass):** CI now runs the Flutter analyzer and test suite;
+  `vercel.json` no longer embeds an administrator password (demo seeding is
+  opt-in via `DEMO_ADMIN_PASSWORD`); legal consent/privacy-request writes are
+  scoped-throttled; and notification preferences expose only the in-app
+  channel that is actually delivered. Reacceptance gating stays deliberately
+  limited to marketplace writes — account, logbook and reading access remain
+  available while the banner asks for acceptance.

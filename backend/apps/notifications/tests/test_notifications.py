@@ -319,6 +319,8 @@ class TestPreferences:
         data = client.get("/api/v1/notifications/preferences/").data
         assert len(data) == len(NotificationCategory.values)
         assert all(row["in_app"] is True for row in data)
+        # Email is not a delivered channel yet, so it must not be advertised.
+        assert all("email" not in row for row in data)
 
     def test_preference_blocks_future_notifications(self, client_factory, world):
         client = client_factory(world.trainee)
@@ -345,6 +347,18 @@ class TestPreferences:
             recipient=world.supervisor,
             category=NotificationCategory.PROCEDURE_SUBMITTED,
         ).exists()
+
+    def test_email_channel_is_rejected_until_implemented(self, client_factory, world):
+        client = client_factory(world.trainee)
+        response = client.put(
+            "/api/v1/notifications/preferences/",
+            {
+                "preferences": [
+                    {"category": NotificationCategory.PROCEDURE_APPROVED, "email": True}
+                ]
+            },
+        )
+        assert response.status_code == 400
 
     def test_unknown_category_rejected(self, client_factory, world):
         client = client_factory(world.trainee)
