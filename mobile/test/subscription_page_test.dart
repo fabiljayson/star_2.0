@@ -33,15 +33,6 @@ const _paymentPending = {
   'failure_reason': null,
 };
 
-const _user = {
-  'id': '11111111-1111-1111-1111-111111111111',
-  'email': 'supplier@example.test',
-  'full_name': 'Demo Supplier',
-  'is_verified': true,
-  'is_platform_admin': false,
-  'roles': <Map<String, dynamic>>[],
-};
-
 AppSession _session(
   Future<http.Response> Function(http.Request request) handler, {
   bool isAdmin = false,

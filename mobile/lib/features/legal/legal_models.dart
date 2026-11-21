@@ -222,15 +222,15 @@ List<PolicySection> sectionsOf(String body) {
 
   void flush() {
     if (heading == null) return;
-    var id = _slugify(heading!);
+    var id = _slugify(heading);
     var n = 2;
     while (used.contains(id)) {
-      id = '${_slugify(heading!)}-${n++}';
+      id = '${_slugify(heading)}-${n++}';
     }
     used.add(id);
     sections.add(PolicySection(
       id: id,
-      heading: heading!,
+      heading: heading,
       body: buffer.join('\n').trim(),
     ));
   }
