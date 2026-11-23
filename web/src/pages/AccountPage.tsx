@@ -5,13 +5,14 @@ import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { ErrorState } from '../components/ErrorState'
+import { MfaEnrollmentCard } from '../components/MfaEnrollmentCard'
 import { Spinner } from '../components/Spinner'
 import { apiFetch } from '../lib/api'
 import { roleLabel } from '../lib/roles'
 import type { User } from '../lib/types'
 
 export function AccountPage() {
-  const { user, logout, logoutAll } = useAuth()
+  const { user, logout, logoutAll, refreshUser } = useAuth()
   const navigate = useNavigate()
 
   const query = useQuery({
@@ -30,6 +31,11 @@ export function AccountPage() {
   async function onSignOutEverywhere(): Promise<void> {
     await logoutAll()
     navigate('/login', { replace: true })
+  }
+
+  async function onMfaChanged(): Promise<void> {
+    await refreshUser()
+    await query.refetch()
   }
 
   if (query.isPending && !account) {
@@ -74,6 +80,13 @@ export function AccountPage() {
         </div>
       </header>
 
+      {account.is_platform_admin && !account.mfa_enabled && (
+        <p className="form-alert" role="alert">
+          Two-factor authentication is required for platform administrator
+          actions. Set it up below before using the admin workspace.
+        </p>
+      )}
+
       <div className="account-grid">
         <Card title="Profile">
           <dl className="definition-list">
@@ -116,6 +129,14 @@ export function AccountPage() {
             </ul>
           )}
         </Card>
+
+        <div id="two-factor">
+          <MfaEnrollmentCard
+            enabled={account.mfa_enabled}
+            required={account.is_platform_admin}
+            onChanged={onMfaChanged}
+          />
+        </div>
 
         <Card title="Consents & privacy">
           <p className="field__hint">

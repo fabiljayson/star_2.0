@@ -6,6 +6,7 @@ import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { ErrorState } from '../../components/ErrorState'
+import { MfaEnrollmentPrompt } from '../../components/MfaEnrollmentPrompt'
 import { Modal } from '../../components/Modal'
 import { Spinner } from '../../components/Spinner'
 import { TextField } from '../../components/TextField'
@@ -42,6 +43,7 @@ export function LegalAdminPage() {
           Back to admin
         </Link>
       </header>
+      <MfaEnrollmentPrompt />
       <div className="tabs">
         <button
           type="button"

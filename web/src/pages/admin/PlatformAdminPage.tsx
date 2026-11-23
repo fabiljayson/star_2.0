@@ -7,6 +7,7 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { MfaEnrollmentPrompt } from '../../components/MfaEnrollmentPrompt'
 import { Spinner } from '../../components/Spinner'
 import { apiFetch } from '../../lib/api'
 import { formatDateTime, formatMoney } from '../../lib/format'
@@ -67,6 +68,8 @@ export function PlatformAdminPage() {
           </p>
         </div>
       </header>
+
+      <MfaEnrollmentPrompt />
 
       {(error || success) && (
         <p className={error ? 'form-alert' : 'form-alert form-alert--success'} role="alert">

@@ -63,6 +63,40 @@ describe('PlatformAdminPage', () => {
     )
   })
 
+  it('prompts platform admins without MFA to enrol before acting', async () => {
+    const fetcher = stubFetch()
+    storeRefreshToken('refresh-1')
+    fetcher.on('/users/me/', () =>
+      jsonResponse(makeUser({ is_platform_admin: true })),
+    )
+    registerAdmin(fetcher)
+
+    renderPage(<PlatformAdminPage />, { route: '/admin' })
+
+    expect(
+      await screen.findByText('Two-factor authentication required'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Set up two-factor' }),
+    ).toHaveAttribute('href', '/account#two-factor')
+  })
+
+  it('hides the MFA prompt once the admin has enrolled', async () => {
+    const fetcher = stubFetch()
+    storeRefreshToken('refresh-1')
+    fetcher.on('/users/me/', () =>
+      jsonResponse(makeUser({ is_platform_admin: true, mfa_enabled: true })),
+    )
+    registerAdmin(fetcher)
+
+    renderPage(<PlatformAdminPage />, { route: '/admin' })
+
+    expect(await screen.findByText('Demo Surgical Supplies')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Two-factor authentication required'),
+    ).not.toBeInTheDocument()
+  })
+
   it('refuses the workspace for accounts without platform administrator rights', async () => {
     const fetcher = stubFetch()
     storeRefreshToken('refresh-1')
