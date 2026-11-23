@@ -219,13 +219,17 @@ The web frontend (`web/`) is a static Vite build; `npm run build` and host
 
 ## 6. Scheduled commands (cron)
 
-One command is mandatory; two housekeeping tasks are optional:
+The order-expiry command is mandatory; the housekeeping tasks keep storage and
+subscription state bounded:
 
 ```cron
 # Cancel unpaid orders past their TTL (PAYMENT_PENDING_TTL_HOURS) and restock.
 # Without it, abandoned checkouts reserve inventory forever.
 0 * * * * cd /srv/star/backend && DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py expire_marketplace_orders >> /srv/star/cron.log 2>&1
 15 * * * * cd /srv/star/backend && DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py expire_marketplace_subscriptions >> /srv/star/cron.log 2>&1
+# Delete private report artifacts once REPORT_ARTIFACT_TTL_HOURS elapses.
+# Downloads already return 410 after expiry; this reclaims the bytes and row.
+30 3 * * * cd /srv/star/backend && DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py purge_expired_reports >> /srv/star/cron.log 2>&1
 ```
 
 ## 7. Go-live checklist
@@ -240,6 +244,8 @@ One command is mandatory; two housekeeping tasks are optional:
       because `PAYMENTS_ACCEPT_MOCK=False` in production
 - [ ] `expire_marketplace_orders` cron entry installed (fake a stale order first)
 - [ ] `expire_marketplace_subscriptions` cron entry installed
+- [ ] `purge_expired_reports` cron entry installed; request a report, expire it,
+      and confirm the artifact file and row are gone after the next run
 - [ ] Policy Center: `seed_legal` drafts reviewed by legal counsel, operator
       placeholders (`[[Operator name — to be supplied]]`, contact e-mail,
       liability limits) replaced before any publication

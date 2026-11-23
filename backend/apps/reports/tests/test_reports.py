@@ -2,6 +2,8 @@ from datetime import date, timedelta
 from types import SimpleNamespace
 
 import pytest
+from django.core.files.base import ContentFile
+from django.core.management import call_command
 from django.utils import timezone
 
 from apps.accounts.models import UserRole
@@ -336,3 +338,44 @@ class TestDownloadAndIsolation:
         assert AuditEvent.objects.filter(
             action=AuditEvent.Action.REPORT_DOWNLOADED, object_pk=job["id"]
         ).exists()
+
+
+class TestArtifactRetention:
+    def _job(self, world, *, hours_until_expiry: int) -> ReportJob:
+        now = timezone.now()
+        return ReportJob.objects.create(
+            requester=world.supervisor,
+            institution=world.institution,
+            report_type="activity_by_date",
+            format="csv",
+            status=ReportStatus.SUCCEEDED,
+            completed_at=now,
+            expires_at=now + timedelta(hours=hours_until_expiry),
+        )
+
+    def test_purge_deletes_expired_jobs_and_files(self, world):
+        expired = self._job(world, hours_until_expiry=-1)
+        expired.artifact.save(
+            "expired.csv", ContentFile(b"a,b\n1,2\n"), save=True
+        )
+        storage = expired.artifact.storage
+        artifact_name = expired.artifact.name
+
+        live = self._job(world, hours_until_expiry=1)
+        live.artifact.save("live.csv", ContentFile(b"a,b\n1,2\n"), save=True)
+        live_storage = live.artifact.storage
+        live_name = live.artifact.name
+
+        call_command("purge_expired_reports", verbosity=0)
+
+        assert not ReportJob.objects.filter(pk=expired.pk).exists()
+        assert not storage.exists(artifact_name)
+        assert ReportJob.objects.filter(pk=live.pk).exists()
+        assert live_storage.exists(live_name)
+
+    def test_dry_run_keeps_expired_jobs(self, world):
+        expired = self._job(world, hours_until_expiry=-1)
+
+        call_command("purge_expired_reports", "--dry-run", verbosity=0)
+
+        assert ReportJob.objects.filter(pk=expired.pk).exists()

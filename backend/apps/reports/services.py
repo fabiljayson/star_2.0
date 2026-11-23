@@ -256,3 +256,28 @@ def visible_report_jobs(user):
     if not user or not user.is_authenticated or not user.is_active:
         return ReportJob.objects.none()
     return ReportJob.objects.filter(requester=user)
+
+
+def purge_expired_report_jobs(*, now=None, dry_run: bool = False) -> int:
+    """Delete artifacts and rows whose retention window has elapsed.
+
+    A file that cannot be deleted keeps its row so the next run retries it,
+    instead of orphaning bytes in private storage.
+    """
+    cutoff = now or timezone.now()
+    expired = ReportJob.objects.filter(
+        expires_at__isnull=False, expires_at__lte=cutoff
+    )
+    if dry_run:
+        return expired.count()
+    purged = 0
+    for job in expired.iterator():
+        try:
+            if job.artifact:
+                job.artifact.delete(save=False)
+        except Exception:
+            logger.exception("Could not delete report artifact (job=%s)", job.pk)
+            continue
+        job.delete()
+        purged += 1
+    return purged

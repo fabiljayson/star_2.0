@@ -275,8 +275,10 @@ before approving a real listing.
 Periodic tasks: run `uv run python manage.py expire_marketplace_orders` (e.g.
 hourly via cron) to cancel orders whose payment window
 (`PAYMENT_PENDING_TTL_HOURS`, default 24 h) elapsed and release their stock,
-and `uv run python manage.py expire_marketplace_subscriptions` to flip lapsed
-seller subscriptions to `expired` and cancel never-paid checkouts.
+`uv run python manage.py expire_marketplace_subscriptions` to flip lapsed
+seller subscriptions to `expired` and cancel never-paid checkouts, and
+`uv run python manage.py purge_expired_reports` to delete report artifacts
+after `REPORT_ARTIFACT_TTL_HOURS`.
 
 The Policies & Legal Center is seeded with
 `uv run python manage.py seed_legal`: six bilingual (EN/FR) policy texts
