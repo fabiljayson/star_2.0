@@ -229,6 +229,10 @@ subscription state bounded:
 15 * * * * cd /srv/star/backend && DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py expire_marketplace_subscriptions >> /srv/star/cron.log 2>&1
 # Delete private report artifacts once REPORT_ARTIFACT_TTL_HOURS elapses.
 # Downloads already return 410 after expiry; this reclaims the bytes and row.
+# Exits non-zero on a failed deletion or an expired backlog above
+# REPORT_RETENTION_BACKLOG_ALERT (default 100). Output is redirected here,
+# so wrap it in a healthchecks.io check or another non-zero-exit alerter
+# rather than relying on cron MAILTO.
 30 3 * * * cd /srv/star/backend && DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py purge_expired_reports >> /srv/star/cron.log 2>&1
 ```
 
@@ -245,7 +249,8 @@ subscription state bounded:
 - [ ] `expire_marketplace_orders` cron entry installed (fake a stale order first)
 - [ ] `expire_marketplace_subscriptions` cron entry installed
 - [ ] `purge_expired_reports` cron entry installed; request a report, expire it,
-      and confirm the artifact file and row are gone after the next run
+      confirm the artifact file and row are gone after the next run, and verify
+      a non-zero exit reaches an operator (test with `--max-backlog 0`)
 - [ ] Policy Center: `seed_legal` drafts reviewed by legal counsel, operator
       placeholders (`[[Operator name — to be supplied]]`, contact e-mail,
       liability limits) replaced before any publication

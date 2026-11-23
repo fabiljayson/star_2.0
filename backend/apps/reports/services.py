@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
 
 from django.conf import settings
@@ -258,26 +259,61 @@ def visible_report_jobs(user):
     return ReportJob.objects.filter(requester=user)
 
 
-def purge_expired_report_jobs(*, now=None, dry_run: bool = False) -> int:
+@dataclass(frozen=True)
+class ReportPurgeResult:
+    """Outcome of one retention sweep."""
+
+    expired: int
+    purged: int
+    failed: int
+
+
+def purge_expired_report_jobs(
+    *, now=None, dry_run: bool = False
+) -> ReportPurgeResult:
     """Delete artifacts and rows whose retention window has elapsed.
 
     A file that cannot be deleted keeps its row so the next run retries it,
-    instead of orphaning bytes in private storage.
+    instead of orphaning bytes in private storage. The result lets callers
+    alert when deletion fails or the expired backlog has grown.
     """
     cutoff = now or timezone.now()
     expired = ReportJob.objects.filter(
         expires_at__isnull=False, expires_at__lte=cutoff
     )
+    expired_count = expired.count()
     if dry_run:
-        return expired.count()
-    purged = 0
+        return ReportPurgeResult(expired=expired_count, purged=0, failed=0)
+    purged = failed = 0
     for job in expired.iterator():
         try:
             if job.artifact:
                 job.artifact.delete(save=False)
         except Exception:
             logger.exception("Could not delete report artifact (job=%s)", job.pk)
+            failed += 1
             continue
         job.delete()
         purged += 1
-    return purged
+
+    result = ReportPurgeResult(expired=expired_count, purged=purged, failed=failed)
+    if failed:
+        logger.error(
+            "Report retention: %d expired, %d purged, %d failed",
+            result.expired,
+            result.purged,
+            result.failed,
+        )
+    else:
+        logger.info(
+            "Report retention: %d expired, %d purged",
+            result.expired,
+            result.purged,
+        )
+    if result.expired > settings.REPORT_RETENTION_BACKLOG_ALERT:
+        logger.warning(
+            "Report retention backlog %d exceeds alert threshold %d",
+            result.expired,
+            settings.REPORT_RETENTION_BACKLOG_ALERT,
+        )
+    return result

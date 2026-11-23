@@ -1,9 +1,13 @@
 from datetime import date, timedelta
 from types import SimpleNamespace
+from unittest import mock
 
 import pytest
 from django.core.files.base import ContentFile
+from django.core.files.storage import FileSystemStorage
 from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import override_settings
 from django.utils import timezone
 
 from apps.accounts.models import UserRole
@@ -379,3 +383,22 @@ class TestArtifactRetention:
         call_command("purge_expired_reports", "--dry-run", verbosity=0)
 
         assert ReportJob.objects.filter(pk=expired.pk).exists()
+
+    def test_command_fails_when_artifact_deletion_fails(self, world):
+        expired = self._job(world, hours_until_expiry=-1)
+        expired.artifact.save("stuck.csv", ContentFile(b"x"), save=True)
+
+        with mock.patch.object(
+            FileSystemStorage, "delete", side_effect=OSError("denied")
+        ):
+            with pytest.raises(CommandError, match="could not be deleted"):
+                call_command("purge_expired_reports", verbosity=0)
+
+        assert ReportJob.objects.filter(pk=expired.pk).exists()
+
+    @override_settings(REPORT_RETENTION_BACKLOG_ALERT=0)
+    def test_command_fails_when_backlog_exceeds_threshold(self, world):
+        self._job(world, hours_until_expiry=-1)
+
+        with pytest.raises(CommandError, match="exceeds threshold"):
+            call_command("purge_expired_reports", verbosity=0)
