@@ -18,6 +18,7 @@ from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
 from apps.core.permissions import (
     administered_institution_ids,
+    has_platform_admin_access,
     is_institution_admin,
     is_platform_admin,
     require_institution_admin,
@@ -52,7 +53,7 @@ class InstitutionListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self) -> QuerySet[Institution]:
         qs = Institution.objects.all()
-        if not is_platform_admin(self.request.user):
+        if not has_platform_admin_access(self.request.user):
             qs = qs.filter(is_active=True)
         return qs
 
@@ -85,7 +86,7 @@ class InstitutionDetailView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         obj = super().get_object()
         user = self.request.user
-        if not is_platform_admin(user) and not is_institution_admin(user, obj):
+        if not has_platform_admin_access(user) and not is_institution_admin(user, obj):
             if not obj.is_active:
                 raise exceptions.NotFound()
         return obj
@@ -93,7 +94,9 @@ class InstitutionDetailView(generics.RetrieveUpdateAPIView):
     def perform_update(self, serializer):
         user = self.request.user
         institution = serializer.instance
-        if not is_platform_admin(user):
+        if is_platform_admin(user):
+            require_platform_admin(user)
+        else:
             require_institution_admin(user, institution)
         instance = serializer.save()
         record_audit(
@@ -116,7 +119,7 @@ class DepartmentListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self) -> QuerySet[Department]:
         qs = Department.objects.select_related("institution")
-        if not is_platform_admin(self.request.user):
+        if not has_platform_admin_access(self.request.user):
             qs = qs.filter(is_active=True)
         return qs
 
@@ -144,7 +147,7 @@ class DepartmentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self) -> QuerySet[Department]:
         qs = Department.objects.select_related("institution")
-        if not is_platform_admin(self.request.user):
+        if not has_platform_admin_access(self.request.user):
             qs = qs.filter(is_active=True)
         return qs
 
@@ -192,7 +195,7 @@ class SpecialtyListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self) -> QuerySet[Specialty]:
         qs = Specialty.objects.all()
-        if not is_platform_admin(self.request.user):
+        if not has_platform_admin_access(self.request.user):
             qs = qs.filter(is_active=True)
         return qs
 
@@ -222,7 +225,7 @@ class MembershipListCreateView(generics.ListCreateAPIView):
     def get_queryset(self) -> QuerySet[RoleAssignment]:
         user = self.request.user
         institution_param = self.request.query_params.get("institution")
-        if is_platform_admin(user):
+        if has_platform_admin_access(user):
             qs = RoleAssignment.objects.all()
         elif institution_param:
             institution_id = _parse_uuid(institution_param, "institution")
@@ -265,7 +268,7 @@ class MembershipDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self) -> QuerySet[RoleAssignment]:
         user = self.request.user
-        if is_platform_admin(user):
+        if has_platform_admin_access(user):
             qs = RoleAssignment.objects.all()
         else:
             administered = administered_institution_ids(user)
@@ -324,7 +327,7 @@ class InvitationListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self) -> QuerySet[Invitation]:
         user = self.request.user
-        if is_platform_admin(user):
+        if has_platform_admin_access(user):
             qs = Invitation.objects.all()
         else:
             administered = administered_institution_ids(user)

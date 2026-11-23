@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import UserRole
+from apps.core.permissions import has_platform_admin_access, require_platform_admin
 
 from . import payments, services, subscriptions
 from .models import (
@@ -252,11 +253,7 @@ class AdminCategoryListCreateView(generics.ListCreateAPIView):
     queryset = ProductCategory.objects.all()
 
     def perform_create(self, serializer):
-        if not services.is_platform_admin(self.request.user):
-            raise exceptions.PermissionDenied(
-                "Only platform administrators manage categories.",
-                code="permission_denied",
-            )
+        require_platform_admin(self.request.user)
         serializer.save()
 
 
@@ -385,7 +382,7 @@ class OrderPayView(APIView):
 
 class PaymentDetailView(APIView):
     def get(self, request, pk):
-        if services.is_platform_admin(request.user):
+        if has_platform_admin_access(request.user):
             payment = Payment.objects.filter(pk=pk).first()
         else:
             payment = (
@@ -405,11 +402,7 @@ class PaymentSimulateView(APIView):
     """Sandbox provider stand-in: delivers a signed webhook to the real handler."""
 
     def post(self, request, pk):
-        if not services.is_platform_admin(request.user):
-            raise exceptions.PermissionDenied(
-                "Only platform administrators trigger sandbox outcomes.",
-                code="permission_denied",
-            )
+        require_platform_admin(request.user)
         payment = Payment.objects.filter(pk=pk).first()
         if payment is None:
             raise exceptions.NotFound()
@@ -601,7 +594,7 @@ class OrderDisputeView(APIView):
 
 class DisputeDetailView(APIView):
     def get(self, request, pk):
-        if services.is_platform_admin(request.user):
+        if has_platform_admin_access(request.user):
             dispute = Dispute.objects.filter(pk=pk).first()
         else:
             dispute = (
@@ -640,7 +633,7 @@ class DisputeEvidenceDownloadView(APIView):
         if dispute is None:
             raise exceptions.NotFound()
         if not (
-            services.is_platform_admin(request.user)
+            has_platform_admin_access(request.user)
             or services.is_order_party(request.user, dispute.order)
         ):
             raise exceptions.NotFound()
@@ -684,11 +677,7 @@ class DisputeListView(generics.ListAPIView):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        if not services.is_platform_admin(self.request.user):
-            raise exceptions.PermissionDenied(
-                "Only platform administrators list all disputes.",
-                code="permission_denied",
-            )
+        require_platform_admin(self.request.user)
         queryset = Dispute.objects.all()
         open_only = self.request.query_params.get("status")
         if open_only:

@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import pytest
+from django.test import override_settings
 
 from apps.accounts.models import RoleAssignment, User, UserRole
 from apps.accounts.tests.factories import (
@@ -205,6 +206,21 @@ class TestRoleManagement:
         assert response.status_code == 200
         world.institution_a.refresh_from_db()
         assert world.institution_a.is_active is True  # ignored: field read-only
+
+
+class TestEditMfaPolicy:
+    @override_settings(REQUIRE_MFA_FOR_PLATFORM_ADMINS=True)
+    def test_unenrolled_admin_cannot_edit_institution(self, client_factory, world):
+        platform = PlatformAdminFactory(email="mfa-root@example.test")
+        client = client_factory(platform)
+        response = client.patch(
+            f"/api/v1/institutions/{world.institution_a.pk}/",
+            {"contact_email": "blocked@alpha.test"},
+        )
+        assert response.status_code == 403
+        assert response.data["error"]["code"] == "mfa_required"
+        world.institution_a.refresh_from_db()
+        assert world.institution_a.contact_email != "blocked@alpha.test"
 
 
 class TestInstitutionCreation:

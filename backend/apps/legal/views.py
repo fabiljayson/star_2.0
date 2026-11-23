@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
 from apps.core.pagination import StandardPagination
-from apps.core.permissions import is_platform_admin
+from apps.core.permissions import require_platform_admin
 
 from . import services
 from .models import (
@@ -210,11 +210,7 @@ class PrivacyRequestAdminView(views.APIView):
         )
 
     def get(self, request):
-        if not is_platform_admin(request.user):
-            return Response(
-                {"detail": "Only platform administrators browse privacy requests."},
-                status=403,
-            )
+        require_platform_admin(request.user)
         status_filter = request.query_params.get("status")
         petitions = PrivacyRequest.objects.select_related("user")
         if status_filter:
@@ -230,11 +226,7 @@ class PrivacyRequestAdminActionView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        if not is_platform_admin(request.user):
-            return Response(
-                {"detail": "Only platform administrators handle privacy requests."},
-                status=403,
-            )
+        require_platform_admin(request.user)
         petition = PrivacyRequest.objects.filter(pk=pk).first()
         if petition is None:
             return Response({"detail": "Not found."}, status=404)
@@ -257,11 +249,7 @@ class PolicyVersionListView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        if not is_platform_admin(request.user):
-            return Response(
-                {"detail": "Only platform administrators manage policies."},
-                status=403,
-            )
+        require_platform_admin(request.user)
         queryset = PolicyVersion.objects.select_related("policy")
         status_filter = request.query_params.get("status")
         language = request.query_params.get("language")
@@ -283,11 +271,7 @@ class PolicyVersionAdminActionView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk, action: str):
-        if not is_platform_admin(request.user):
-            return Response(
-                {"detail": "Only platform administrators manage policies."},
-                status=403,
-            )
+        require_platform_admin(request.user)
         version = PolicyVersion.objects.select_related("policy").filter(pk=pk).first()
         if version is None:
             return Response({"detail": "Not found."}, status=404)
@@ -316,22 +300,14 @@ class PolicyVersionDetailView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk):
-        if not is_platform_admin(request.user):
-            return Response(
-                {"detail": "Only platform administrators preview policy drafts."},
-                status=403,
-            )
+        require_platform_admin(request.user)
         version = PolicyVersion.objects.select_related("policy").filter(pk=pk).first()
         if version is None:
             return Response({"detail": "Not found."}, status=404)
         return Response(PolicyVersionAdminSerializer(version).data)
 
     def patch(self, request, pk):
-        if not is_platform_admin(request.user):
-            return Response(
-                {"detail": "Only platform administrators edit policy drafts."},
-                status=403,
-            )
+        require_platform_admin(request.user)
         version = PolicyVersion.objects.select_related("policy").filter(pk=pk).first()
         if version is None:
             return Response({"detail": "Not found."}, status=404)
@@ -359,11 +335,7 @@ class PolicyVersionAdminCreateView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, slug: str):
-        if not is_platform_admin(request.user):
-            return Response(
-                {"detail": "Only platform administrators manage policies."},
-                status=403,
-            )
+        require_platform_admin(request.user)
         policy = _policy_or_404(slug)
         serializer = PolicyVersionCreateSerializer(
             data=request.data, context={"policy": policy}

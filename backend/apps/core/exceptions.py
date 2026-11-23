@@ -26,6 +26,14 @@ class SellerSubscriptionRequired(exceptions.APIException):
     )
 
 
+class EmailNotVerified(exceptions.APIException):
+    """403 raised when sign-in requires a verified email address."""
+
+    status_code = status.HTTP_403_FORBIDDEN
+    default_code = "email_not_verified"
+    default_detail = "Verify your email address before signing in."
+
+
 class TermsAcceptanceRequired(exceptions.APIException):
     """403 raised when a marketplace write needs the current Terms accepted."""
 

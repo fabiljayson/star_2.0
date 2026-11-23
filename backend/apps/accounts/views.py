@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.core.audit import record_audit
+from apps.core.exceptions import EmailNotVerified
 from apps.core.models import AuditEvent
 from apps.core.permissions import administered_institution_ids
 
@@ -105,6 +106,9 @@ class LoginView(views.APIView):
         serializer = LoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
+
+        if settings.REQUIRE_EMAIL_VERIFICATION and not user.is_verified:
+            raise EmailNotVerified()
 
         if user.mfa_enabled:
             session, ttl = services.start_mfa_session(user)

@@ -7,6 +7,7 @@ from rest_framework import exceptions
 from apps.accounts.models import RoleAssignment, UserRole
 from apps.core.audit import record_audit
 from apps.core.models import AuditEvent
+from apps.core.permissions import has_platform_admin_access, require_platform_admin
 
 from . import subscriptions
 from .models import (
@@ -33,10 +34,6 @@ from .models import (
     SupplierProfile,
     SupplierVerificationStatus,
 )
-
-
-def is_platform_admin(user) -> bool:
-    return bool(user and user.is_authenticated and user.is_platform_admin)
 
 
 def has_role(user, role) -> bool:
@@ -162,11 +159,7 @@ def restock(product: Product, quantity: int, *, actor=None, request=None) -> Non
 # ── Admin verification & approvals ─────────────────────────────────────
 @transaction.atomic
 def verify_supplier(admin, profile: SupplierProfile, *, approve: bool, request=None):
-    if not is_platform_admin(admin):
-        raise exceptions.PermissionDenied(
-            "Only platform administrators verify suppliers.",
-            code="permission_denied",
-        )
+    require_platform_admin(admin)
     profile.verification_status = (
         SupplierVerificationStatus.VERIFIED
         if approve
@@ -194,11 +187,7 @@ def verify_supplier(admin, profile: SupplierProfile, *, approve: bool, request=N
 
 
 def suspend_supplier(admin, profile: SupplierProfile, *, reason: str, request=None):
-    if not is_platform_admin(admin):
-        raise exceptions.PermissionDenied(
-            "Only platform administrators suspend suppliers.",
-            code="permission_denied",
-        )
+    require_platform_admin(admin)
     profile.verification_status = SupplierVerificationStatus.SUSPENDED
     profile.suspension_reason = reason
     profile.save(update_fields=["verification_status", "suspension_reason", "updated_at"])
@@ -215,11 +204,7 @@ def suspend_supplier(admin, profile: SupplierProfile, *, reason: str, request=No
 
 @transaction.atomic
 def decide_product(admin, product: Product, *, approve: bool, request=None) -> Product:
-    if not is_platform_admin(admin):
-        raise exceptions.PermissionDenied(
-            "Only platform administrators approve products.",
-            code="permission_denied",
-        )
+    require_platform_admin(admin)
     product.approval_status = (
         ProductApprovalStatus.APPROVED
         if approve
@@ -395,11 +380,8 @@ def cancel_order(order: Order, *, actor, reason: str = "", request=None) -> Orde
             {"status": f"An order in status '{order.status}' cannot be cancelled."}
         )
     is_owner = order.buyer_id == getattr(actor, "pk", None)
-    if not is_owner and not is_platform_admin(actor):
-        raise exceptions.PermissionDenied(
-            "Only the buyer or a platform administrator can cancel this order.",
-            code="permission_denied",
-        )
+    if not is_owner:
+        require_platform_admin(actor)
     order.status = OrderStatus.CANCELLED
     order.cancelled_at = timezone.now()
     order.cancel_reason = reason[:255]
@@ -419,7 +401,7 @@ def cancel_order(order: Order, *, actor, reason: str = "", request=None) -> Orde
 def visible_orders(user):
     if not user or not user.is_authenticated or not user.is_active:
         return Order.objects.none()
-    if user.is_platform_admin:
+    if has_platform_admin_access(user):
         return Order.objects.all()
     profile = get_supplier_profile(user)
     if profile is not None:
@@ -650,11 +632,7 @@ def resolve_dispute(
 ) -> Dispute:
     from .payments import refund_for_dispute
 
-    if not is_platform_admin(actor):
-        raise exceptions.PermissionDenied(
-            "Only platform administrators resolve disputes.",
-            code="permission_denied",
-        )
+    require_platform_admin(actor)
     if dispute.status != DisputeStatus.OPEN:
         raise exceptions.ValidationError(
             {"status": "This dispute has already been resolved."}

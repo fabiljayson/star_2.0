@@ -123,6 +123,25 @@ class TestLogin:
         assert user.email == user.email  # email is not writable
 
 
+class TestEmailVerificationGate:
+    def test_unverified_user_cannot_log_in_when_required(self, api):
+        user = UserFactory(is_verified=False)
+        response = api.post(
+            LOGIN_URL, {"email": user.email, "password": DEFAULT_TEST_PASSWORD}
+        )
+        assert response.status_code == 403
+        assert response.data["error"]["code"] == "email_not_verified"
+
+    @override_settings(REQUIRE_EMAIL_VERIFICATION=False)
+    def test_unverified_user_can_log_in_when_requirement_is_off(self, api):
+        user = UserFactory(is_verified=False)
+        response = api.post(
+            LOGIN_URL, {"email": user.email, "password": DEFAULT_TEST_PASSWORD}
+        )
+        assert response.status_code == 200
+        assert "access" in response.data
+
+
 class TestTokensAndRevocation:
     def test_refresh_rotates_refresh_token(self, client_factory):
         user = UserFactory()

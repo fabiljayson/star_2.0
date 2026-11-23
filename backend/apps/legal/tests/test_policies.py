@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
+from django.test import override_settings
+from rest_framework.test import APIClient
 
 from apps.accounts.models import User
 from apps.accounts.tests.factories import DEFAULT_TEST_PASSWORD, PlatformAdminFactory
@@ -31,7 +33,13 @@ def _register(client, email: str = "newbuyer@example.test", role: str = "buyer")
         },
     )
     assert response.status_code == 201, response.data
-    return User.objects.get(pk=response.data["user"]["id"])
+    user = User.objects.get(pk=response.data["user"]["id"])
+    # Most tests start after the email-confirmation step, which registration
+    # deliberately leaves pending.
+    if not user.is_verified:
+        user.is_verified = True
+        user.save(update_fields=["is_verified", "updated_at"])
+    return user
 
 
 @pytest.fixture
@@ -258,6 +266,32 @@ class TestPrivacyRequests:
 
 
 # ── Admin lifecycle ────────────────────────────────────────────────────
+@pytest.mark.django_db
+class TestAdminMfaPolicy:
+    @override_settings(REQUIRE_MFA_FOR_PLATFORM_ADMINS=True)
+    def test_unenrolled_admin_cannot_publish(
+        self, client_factory, seeded_policies, draft_version
+    ):
+        admin_client = client_factory(PlatformAdminFactory())
+        response = admin_client.post(
+            f"/api/v1/legal/policy-versions/{draft_version.pk}/submit-review/"
+        )
+        assert response.status_code == 403
+        assert response.data["error"]["code"] == "mfa_required"
+
+    @override_settings(REQUIRE_MFA_FOR_PLATFORM_ADMINS=True)
+    def test_enrolled_admin_can_publish(self, seeded_policies, draft_version):
+        # Enrolled admins sign in through the MFA challenge; authenticate the
+        # request directly so this test isolates the policy check.
+        admin = PlatformAdminFactory(mfa_enabled=True)
+        admin_client = APIClient()
+        admin_client.force_authenticate(user=admin)
+        response = admin_client.post(
+            f"/api/v1/legal/policy-versions/{draft_version.pk}/submit-review/"
+        )
+        assert response.status_code == 200, response.data
+
+
 @pytest.mark.django_db
 class TestAdminLifecycle:
     def test_non_admin_cannot_manage_policies(

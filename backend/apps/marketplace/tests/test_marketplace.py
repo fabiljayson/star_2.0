@@ -4,6 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework import status
 
@@ -239,6 +240,27 @@ class TestAdminVerification:
         assert response.status_code == status.HTTP_200_OK
         product.refresh_from_db()
         assert product.approval_status == "approved"
+
+
+@pytest.mark.django_db
+class TestAdminMfaPolicy:
+    @override_settings(REQUIRE_MFA_FOR_PLATFORM_ADMINS=True)
+    def test_unenrolled_admin_cannot_verify_supplier(
+        self, supplier_user, platform_admin, client_factory
+    ):
+        profile = SupplierProfile.objects.create(
+            user=supplier_user,
+            company_name="Pending MFA",
+            contact_email=supplier_user.email,
+        )
+        client = client_factory(platform_admin)
+        response = client.post(
+            f"/api/v1/marketplace/admin/suppliers/{profile.pk}/verify/"
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.data["error"]["code"] == "mfa_required"
+        profile.refresh_from_db()
+        assert not profile.is_verified
 
 
 @pytest.mark.django_db

@@ -26,6 +26,20 @@ def is_platform_admin(user) -> bool:
     return bool(user and user.is_authenticated and user.is_platform_admin)
 
 
+def has_platform_admin_access(user) -> bool:
+    """Platform-admin access with the MFA policy applied.
+
+    Returns False for a user who is not a platform administrator. Raises
+    `MFARequired` for a platform administrator who has not enrolled while the
+    policy is enabled, so admin-only branches cannot bypass it.
+    """
+    if not is_platform_admin(user):
+        return False
+    if not _mfa_policy_satisfied(user):
+        raise MFARequired()
+    return True
+
+
 def has_role(user, role: str, institution=None) -> bool:
     """True when the user holds an active `role` (institution-scoped when required)."""
     if not user or not user.is_authenticated or not user.is_active:
